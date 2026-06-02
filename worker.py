@@ -407,8 +407,6 @@ class Worker(Thread):  # Get details
         names = ['Introduce', 'PublisherDesc']
         section_defs = [
             ('comments', None, ['책소개', '출판사 제공 책소개', 'Publisher Description', 'Overview']),
-            ('from-book', '책속에서', ['책속에서', '책 속에서']),
-            ('recommendation', '추천글', ['추천글', '추천의 글', '추천사']),
             ('author', '저자소개', ['저자소개', '저자 소개', '저자 및 역자소개', '저자 및 역자 소개',
                                 '저자/역자소개', '역자소개', '역자 소개']),
             ('publisher-review', '출판사 리뷰', ['출판사 리뷰', '출판사 서평', '편집자 리뷰', '편집장의 선택']),

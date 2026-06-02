@@ -41,7 +41,7 @@ class Aladin_co_kr(Source):
     name = 'Aladin.co.kr'
     description = _('Downloads metadata and covers from aladin.co.kr')
     author = 'YongSeok Choi'
-    version = (1, 1, 0)
+    version = (1, 1, 1)
     minimum_calibre_version = (0, 8, 0)
     
     (_, encoding) = locale.getdefaultlocale()

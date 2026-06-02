@@ -5,7 +5,7 @@ Calibre-Metadata-Source-Plugin-Aladin.co.kr
 
 현재 버전
 ---------
-1.1.0
+1.1.1
 
 주요 변경 사항
 --------------
@@ -13,11 +13,11 @@ Calibre-Metadata-Source-Plugin-Aladin.co.kr
 - 일반 검색 페이지에서 사용할 수 있는 도서 목록을 찾지 못하면 알라딘 Search3Ajax 검색 결과를 대신 사용합니다.
 - 알라딘 검색 응답에 문자셋 정보가 있으면 해당 문자셋으로 디코딩합니다.
 - 플러그인 옵션이 켜져 있고 목차 데이터가 있으면 알라딘 목차를 책소개 뒤에 붙입니다.
-- 알라딘이 제공하는 책속에서, 추천글, 저자소개, 출판사 리뷰 정보가 있으면 책소개에 함께 포함합니다.
+- 알라딘이 제공하는 저자소개, 출판사 리뷰 정보가 있으면 책소개에 함께 포함합니다.
 
 설치 방법
 ---------
-1. [releases](https://github.com/sseeookk/Calibre-Metadata-Source-Plugin-Aladin.co.kr/releases)에서 최신 버전 zip 파일을 다운로드합니다. 예: `Calibre-Metadata-Source-Plugin-Aladin.co.kr-v1.1.0.zip`
+1. [releases](https://github.com/sseeookk/Calibre-Metadata-Source-Plugin-Aladin.co.kr/releases)에서 최신 버전 zip 파일을 다운로드합니다. 예: `Calibre-Metadata-Source-Plugin-Aladin.co.kr-v1.1.1.zip`
 2. Calibre에서 `Preferences`를 엽니다.
 3. `Advanced` -> `Plugins`로 이동합니다.
 4. `Load plugin from file`을 누르고 다운로드한 zip 파일을 선택합니다.
