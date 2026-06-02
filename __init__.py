@@ -41,7 +41,7 @@ class Aladin_co_kr(Source):
     name = 'Aladin.co.kr'
     description = _('Downloads metadata and covers from aladin.co.kr')
     author = 'YongSeok Choi'
-    version = (1, 0, 1)
+    version = (1, 0, 2)
     minimum_calibre_version = (0, 8, 0)
     
     (_, encoding) = locale.getdefaultlocale()
@@ -66,6 +66,46 @@ class Aladin_co_kr(Source):
     # SortOrder 정렬순서(select="SortOrder") -  11 정확도순,  1 상품명순,  2 판매량순,  3 평점순,  4 리뷰순,  5 출간일순,  9 저가격순
     
     BASE_URL = 'http://www.aladin.co.kr'
+
+    def _read_response_html(self, response):
+        raw = response.read().strip()
+        if not raw:
+            return ''
+        if isinstance(raw, unicode):
+            return raw
+
+        encodings = []
+        try:
+            charset = response.info().get_content_charset()
+            if charset:
+                encodings.append(charset)
+        except:
+            pass
+
+        for encoding in encodings + ['utf-8', 'cp949', 'euc-kr']:
+            try:
+                return raw.decode(encoding)
+            except:
+                pass
+        return raw.decode('utf-8', errors='replace')
+
+    def _create_ajax_query_from_search_query(self, query):
+        match = re.search(r'[?&]SearchWord=([^&]+)', query)
+        if not match:
+            return None
+        search_word = match.group(1)
+        return (
+            '%s/search/Search3Ajax.aspx?SearchTarget=All&KeyWord=%s'
+            '&KeyFullWord=%s&KeyLastWord=%s&CategorySearch='
+            '&ViewType=Detail&SortOrder=11&page=1&viewrowcount=25'
+            '&ItemViewTypes=Browse&method=search3html2'
+        ) % (Aladin_co_kr.BASE_URL, search_word, search_word, search_word)
+
+    def _search_result_nodes(self, root):
+        results = root.xpath('//div[@id="Search3_Result"]/div[contains(@class, "ss_book_box")]')
+        if not results:
+            results = root.xpath('//div[contains(@class, "ss_book_box")]')
+        return results
     
     def config_widget(self):
         """
@@ -192,13 +232,8 @@ class Aladin_co_kr(Source):
                 response = br.open_novisit(query, timeout=timeout)
                 
                 try:
-                    raw = response.read().strip()
+                    raw = self._read_response_html(response)
                     # open('E:\\t11.html', 'wb').write(raw) # XXXX
-                    
-                    # by sseeookk
-                    # euc-kr at aladin.co.kr
-                    raw = raw.decode('utf-8', errors='replace')
-                    # raw = raw.decode('euc-kr', errors='replace')  # sseeookk
                     if not raw:
                         log.error('Failed to get raw result for query: %r' % query)
                         return
@@ -220,6 +255,18 @@ class Aladin_co_kr(Source):
                     # Now grab the first value from the search results, provided the
                     # title and authors appear to be for the same book
                     self._parse_search_results(log, title, authors, root, matches, timeout)
+                    if not matches:
+                        ajax_query = self._create_ajax_query_from_search_query(query)
+                        if ajax_query:
+                            log.info('No results in search page, querying AJAX search: %s' % ajax_query)
+                            try:
+                                response = br.open_novisit(ajax_query, timeout=timeout)
+                                raw = self._read_response_html(response)
+                                if raw:
+                                    root = fromstring(clean_ascii_chars(raw))
+                                    self._parse_search_results(log, title, authors, root, matches, timeout)
+                            except:
+                                log.exception('Failed to parse aladin AJAX search page for query: %r' % ajax_query)
             
             except Exception as e:
                 err = 'Failed to make identify query: %r' % query
@@ -259,7 +306,7 @@ class Aladin_co_kr(Source):
     
     def _parse_search_isbn_results(self, log, orig_isbn, root, matches, timeout):
         UNSUPPORTED_FORMATS = ['audiobook', 'other format', 'cd', 'item', 'see all formats & editions']
-        results = root.xpath('//div[@id="Search3_Result"]/div[contains(@class, "ss_book_box")]')
+        results = self._search_result_nodes(root)
         if not results:
             # log.info('FOUND NO RESULTS:')
             return
@@ -306,7 +353,7 @@ class Aladin_co_kr(Source):
         # [국내도서], [외국도서], '[eBook]', '[알라딘굿즈]', '[커피]', '[음반]', '[DVD]', '[블루레이]'
         UNSUPPORTED_FORMATS = ['[ebook]', '[알라딘굿즈]', '[커피]', '[음반]', '[dvd]', '[블루레이]']
         
-        results = root.xpath('//div[@id="Search3_Result"]/div[contains(@class, "ss_book_box")]')
+        results = self._search_result_nodes(root)
         if not results:
             log.info('FOUND NO RESULTS:')
             return
@@ -347,7 +394,7 @@ class Aladin_co_kr(Source):
             
             title = ''
             if title_nodes:
-                title = re.sub("\s{2,}", " ", title_nodes[0].text_content().strip())
+                title = re.sub(r"\s{2,}", " ", title_nodes[0].text_content().strip())
             if not title:
                 log.info('Could not find title')
                 continue

@@ -1,1 +1,6 @@
 .history/
+__pycache__/
+*.py[cod]
+Calibre-Metadata-Source-Plugin-Aladin.co.kr*.zip
+Aladin.co.kr*.zip
+

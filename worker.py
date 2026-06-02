@@ -379,8 +379,9 @@ class Worker(Thread):  # Get details
 
         comments = ''
         toc = ''
-        rawDesc = ''
         urlDesc = ''
+        default_append_toc = cfg.DEFAULT_STORE_VALUES[cfg.KEY_APPEND_TOC]
+        append_toc = cfg.plugin_prefs[cfg.STORE_NAME].get(cfg.KEY_APPEND_TOC, default_append_toc)
         
         for name in names:
             urlDesc = "http://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=%s&name=%s&type=0&date=%s" %\
@@ -389,9 +390,6 @@ class Worker(Thread):  # Get details
             try:
                 self.browser.addheaders = [('Referer', self.url)]
                 rawDesc = self.browser.open_novisit(urlDesc, timeout=self.timeout).read().strip()
-                
-                if len(rawDesc) > 0:
-                    break
             except Exception as e:
                 if callable(getattr(e, 'getcode', None)) and e.getcode() == 404:
                     self.log.error('URL malformed: %r' % urlDesc)
@@ -404,8 +402,11 @@ class Worker(Thread):  # Get details
                     else:
                         msg = 'Failed to make Descrpitions query: %r' % urlDesc
                         self.log.exception(msg)
-        
-        if rawDesc:
+                continue
+
+            if not rawDesc:
+                continue
+
             rootDesc = None
             try:
                 rawDesc = rawDesc.decode('utf-8', errors='replace')
@@ -450,7 +451,7 @@ class Worker(Thread):  # Get details
                         './/div[@class="Ere_prod_mconts_box"]//div[text()="출판사 제공 책소개"]/..'
                         '//div[@class="Ere_prod_mconts_R"]')
                 
-                if introduce_nodes:
+                if introduce_nodes and not comments:
                     # self.log('Got a comments description node')
                     self._removeTags(introduce_nodes[0], ["object", "script", "style"])
                     # comments = tostring(introduce_nodes[0], method='html', encoding=six.text_type).strip()
@@ -462,10 +463,7 @@ class Worker(Thread):  # Get details
             except:
                 msg = 'Failed to parse aladin details page: %r' % urlDesc
                 self.log.exception(msg)
-            
-            default_append_toc = cfg.DEFAULT_STORE_VALUES[cfg.KEY_APPEND_TOC]
-            append_toc = cfg.plugin_prefs[cfg.STORE_NAME].get(cfg.KEY_APPEND_TOC, default_append_toc)
-            
+
             #     <!-- 목차 시작 -->
             #     <div class="Ere_prod_mconts_box">
             #         <div class="Ere_prod_mconts_LL">목차</div>
@@ -473,13 +471,15 @@ class Worker(Thread):  # Get details
             #         <div class="Ere_prod_mconts_R" id="tocTemplate">
             #             <div id="div_TOC_Short" style="word-break: break-all">
             #             <a href="javascript:fn_show_introduce_TOC('TOC')"><p><B>0장 도입</B>
-            if rootDesc is not None and append_toc:
+            if rootDesc is not None and append_toc and not toc:
                 toc_node = rootDesc.xpath('//div[@id="div_TOC_All"]//p')
                 if not toc_node:
                     toc_node = rootDesc.xpath('//div[@id="div_TOC_Short"]//p')
                 if toc_node:
                     toc = tostring(toc_node[0], method='html')
                     toc = sanitize_comments_html(toc)
+            if comments and (toc or not append_toc):
+                break
         if not comments:
             # Look for description in a meta
             description_node = root.xpath('//meta[@name="Description"]/@content')

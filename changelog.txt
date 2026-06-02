@@ -1,19 +1,26 @@
+[B]Version 1.0.2[/B] - 06-02-2026
+[LIST]
+[*]수정: 일반 검색 페이지에서 책 목록을 찾지 못하면 알라딘 Search3Ajax 검색 결과를 대신 사용합니다.
+[*]수정: 알라딘 검색 응답에 문자셋 정보가 있으면 해당 문자셋으로 디코딩합니다.
+[*]수정: 앞선 책소개 응답에 목차만 있는 경우에도 다음 책소개 블록을 계속 확인합니다.
+[/LIST]
+
 [B]Version 1.0.1[/B] - 06-26-2021
 [LIST]
-[*]Fix: Can use Korean Names for Author info.
+[*]수정: 저자 정보에 한글 이름을 사용할 수 있도록 했습니다.
 [/LIST]
 
 [B]Version 1.0.0[/B] - 06-24-2021
 [LIST]
-[*]Update: Changes for Python 3 support in calibre.
-[*]Fix: For changes in Aladin.co.kr Site.
+[*]업데이트: Calibre의 Python 3 환경을 지원하도록 변경했습니다.
+[*]수정: Aladin.co.kr 사이트 변경 사항에 맞춰 동작을 수정했습니다.
 [/LIST]
 
 [B]Version 0.2.5[/B] - 09-11-2018
 [LIST]
-[*]Fix UnicodeDecodeError
-[*]Fix to get ISBN data from Aladin Book Page.
-[*]Fix to 'Download metadata' at Book with ISBN data.
+[*]수정: UnicodeDecodeError 오류를 수정했습니다.
+[*]수정: 알라딘 도서 페이지에서 ISBN 정보를 가져오도록 수정했습니다.
+[*]수정: ISBN 정보가 있는 도서에서 '메타데이터 다운로드'가 동작하도록 수정했습니다.
 [/LIST]
 
 [B]Version 0.2.4[/B] - 01-27-2017
@@ -22,23 +29,23 @@
 
 [B]Version 0.2.1[/B] - 11-10-2014
 [LIST]
-[*]Fix PyQt4 to PyQt5 as Calibre moving to Qt 5.
+[*]수정: Calibre가 Qt 5로 이동함에 따라 PyQt4 코드를 PyQt5에 맞게 수정했습니다.
 [/LIST]
 
 [B]Version 0.2.0[/B] - 03-31-2014
 [LIST]
-[*]Change to modify delimiter ">" of Aladin Categories to delimiter "." for Category Hierarchy.
-[*]Add option of Category Prefix to distinguish Categories from other tags.
-[*]Add option to download small/large cover.
-[*]Change to remove useless html tags(object,script,style) in Aladin comments.
-[*]Add Translation file of Korean.
+[*]변경: 알라딘 카테고리의 구분자 ">"를 카테고리 계층용 구분자 "."로 바꾸도록 했습니다.
+[*]추가: 다른 태그와 카테고리를 구분할 수 있도록 카테고리 접두어 옵션을 추가했습니다.
+[*]추가: 작은 표지와 큰 표지를 선택해 다운로드하는 옵션을 추가했습니다.
+[*]변경: 알라딘 책소개에서 불필요한 HTML 태그(object, script, style)를 제거하도록 했습니다.
+[*]추가: 한국어 번역 파일을 추가했습니다.
 [/LIST]
 
 [B]Version 0.1.0[/B] - 03-18-2014
-Initial release of Aladin.co.kr Metadata Source Plugin
+Aladin.co.kr 메타데이터 소스 플러그인 최초 배포
 [LIST]
-[*]Retrieve aladin.co.kr id, title, author, series, isbn, comments, TOC, rating, publisher, publication date, tags, language and covers(large cover).
-[*]Add option to customise the aladin.co.kr tag -> Calibre tag mappings. A default set of the most popular genre tag mappings is included as a starting point.
-[*]Add option to retrieve the aladin.co.kr Categories to Calibre tag enclosed in square brackets.
-[*]Add option to retrieve all contributors to a book as an author. By default this is turned off, however aladin.co.kr is able to provide illustrators, editors etc should you want these retrieved.
+[*]추가: aladin.co.kr ID, 제목, 저자, 시리즈, ISBN, 책소개, 목차, 평점, 출판사, 출간일, 태그, 언어, 표지(큰 표지)를 가져오도록 했습니다.
+[*]추가: aladin.co.kr 태그를 Calibre 태그로 매핑하는 규칙을 사용자 지정할 수 있는 옵션을 추가했습니다. 시작점으로 자주 쓰이는 장르 태그 매핑 기본값을 포함했습니다.
+[*]추가: aladin.co.kr 카테고리를 대괄호로 감싼 Calibre 태그로 가져오는 옵션을 추가했습니다.
+[*]추가: 도서의 모든 기여자를 저자로 가져오는 옵션을 추가했습니다. 기본값은 꺼져 있지만, 필요하면 일러스트레이터나 편집자 등 알라딘이 제공하는 기여자 정보를 가져올 수 있습니다.
 [/LIST]
