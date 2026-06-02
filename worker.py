@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # vim:fileencoding=UTF-8:ts=4:sw=4:sta:et:sts=4:ai
 from __future__ import (unicode_literals, division, absolute_import, print_function)
 
@@ -366,138 +366,127 @@ class Worker(Thread):  # Get details
                 if rating_value:
                     return float(rating_value) / 2
     
-    def parse_comments(self, root):
-        # 2021-06-24
-        # <!-- 책소개-->
-        # aladin uses other request for description and toc.
-        # 국내 도서 : 책소개
-        # http://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=8970122648&name=Introduce&type=0&date=16
-        # 외국 도서 : 출판사 제공 책소개"
-        # https://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=1491919531&name=PublisherDesc&type=0&date=15
-        
-        names = ['Introduce', 'PublisherDesc']
+    def _normalize_section_label(self, text):
+        return re.sub(r'\s+', '', text or '').strip().lower()
 
-        comments = ''
+    def _find_aladin_content_node(self, root, labels):
+        wanted = set(self._normalize_section_label(label) for label in labels)
+        boxes = root.xpath(
+            './/div[contains(concat(" ", normalize-space(@class), " "), " Ere_prod_mconts_box ")]')
+        for box in boxes:
+            label_nodes = box.xpath(
+                './/div[contains(@class, "Ere_prod_mconts_LS") or contains(@class, "Ere_prod_mconts_LL")]')
+            for label_node in label_nodes:
+                label = self._normalize_section_label(label_node.text_content())
+                if label in wanted:
+                    content_nodes = box.xpath(
+                        './/div[contains(concat(" ", normalize-space(@class), " "), " Ere_prod_mconts_R ")]')
+                    if content_nodes:
+                        return content_nodes[0]
+
+    def _content_node_to_comments_html(self, node):
+        if node is None or not node.text_content().strip():
+            return ''
+        self._removeTags(node, ["object", "script", "style", "iframe", "noscript"])
+        html = tostring(node, method='html', encoding=unicode).strip()
+        html = sanitize_comments_html(html)
+        return html.replace('<h2>Overview</h2>', '').strip()
+
+    def _find_toc_html(self, root):
+        toc_node = root.xpath('//div[@id="div_TOC_All"]//p')
+        if not toc_node:
+            toc_node = root.xpath('//div[@id="div_TOC_Short"]//p')
+        if toc_node:
+            toc = tostring(toc_node[0], method='html', encoding=unicode)
+            return sanitize_comments_html(toc).strip()
+        return ''
+
+    def parse_comments(self, root):
+        # Aladin serves the rich book description blocks through getContents.aspx.
+        # Keep the main synopsis first, then append optional Aladin-provided sections.
+        names = ['Introduce', 'PublisherDesc']
+        section_defs = [
+            ('comments', None, ['책소개', '출판사 제공 책소개', 'Publisher Description', 'Overview']),
+            ('from-book', '책속에서', ['책속에서', '책 속에서']),
+            ('recommendation', '추천글', ['추천글', '추천의 글', '추천사']),
+            ('author', '저자소개', ['저자소개', '저자 소개', '저자 및 역자소개', '저자 및 역자 소개',
+                                '저자/역자소개', '역자소개', '역자 소개']),
+            ('publisher-review', '출판사 리뷰', ['출판사 리뷰', '출판사 서평', '편집자 리뷰', '편집장의 선택']),
+        ]
+
+        sections = OrderedDict()
         toc = ''
-        urlDesc = ''
         default_append_toc = cfg.DEFAULT_STORE_VALUES[cfg.KEY_APPEND_TOC]
         append_toc = cfg.plugin_prefs[cfg.STORE_NAME].get(cfg.KEY_APPEND_TOC, default_append_toc)
-        
-        for name in names:
-            urlDesc = "http://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=%s&name=%s&type=0&date=%s" %\
-                      (self.isbn, name, datetime.datetime.now().hour)
-            
-            try:
-                self.browser.addheaders = [('Referer', self.url)]
-                rawDesc = self.browser.open_novisit(urlDesc, timeout=self.timeout).read().strip()
-            except Exception as e:
-                if callable(getattr(e, 'getcode', None)) and e.getcode() == 404:
-                    self.log.error('URL malformed: %r' % urlDesc)
-                else:
-                    attr = getattr(e, 'args', [None])
-                    attr = attr if attr else [None]
-                    if isinstance(attr[0], socket.timeout):
-                        msg = 'Aladin timed out. Try again later.'
-                        self.log.error(msg)
+
+        if self.isbn:
+            for name in names:
+                urlDesc = "http://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=%s&name=%s&type=0&date=%s" % \
+                          (self.isbn, name, datetime.datetime.now().hour)
+
+                try:
+                    self.browser.addheaders = [('Referer', self.url)]
+                    rawDesc = self.browser.open_novisit(urlDesc, timeout=self.timeout).read().strip()
+                except Exception as e:
+                    if callable(getattr(e, 'getcode', None)) and e.getcode() == 404:
+                        self.log.error('URL malformed: %r' % urlDesc)
                     else:
-                        msg = 'Failed to make Descrpitions query: %r' % urlDesc
-                        self.log.exception(msg)
-                continue
+                        attr = getattr(e, 'args', [None])
+                        attr = attr if attr else [None]
+                        if isinstance(attr[0], socket.timeout):
+                            msg = 'Aladin timed out. Try again later.'
+                            self.log.error(msg)
+                        else:
+                            msg = 'Failed to make Descrpitions query: %r' % urlDesc
+                            self.log.exception(msg)
+                    continue
 
-            if not rawDesc:
-                continue
+                if not rawDesc:
+                    continue
 
-            rootDesc = None
-            try:
-                rawDesc = rawDesc.decode('utf-8', errors='replace')
-                rootDesc = fromstring(clean_ascii_chars(rawDesc))
-                
-                # # rawDesc = rawDesc.decode('euc-kr', errors='replace')
-                # # 2015-03-19 22:26:51
-                # nodeDesc = rootDesc.xpath('//div[@class="p_textbox"]')
-                # if nodeDesc:
-                #     self._removeTags(nodeDesc[0], ["object", "script", "style"])
-                #     comments = tostring(nodeDesc[0], method='html')
-                
-                # 2021-06-24
-                # <!-- 책소개-->
-                #
-                #     <a id="8931463375_introduce"></a>
-                #     <div class="Ere_prod_mconts_box">
-                #
-                #         <div class="Ere_prod_mconts_LS">책소개</div>
-                #         <div class="Ere_prod_mconts_LL">책소개</div>
-                #         <div class="Ere_prod_mconts_R">
-                introduce_nodes = rootDesc.xpath(
-                    './/div[@class="Ere_prod_mconts_box"]//div[text()="책소개"]/..//div[@class="Ere_prod_mconts_R"]')
-                
-                # 2021-06-24
-                # <!-- 출판사 제공 책소개 start-->
-                # <div class="Ere_prod_mconts_box">
-                #
-                #     <div class="Ere_prod_mconts_LS">출판사 제공 책소개</div>
-                #     <div class="Ere_prod_mconts_LL">출판사 제공<br>책소개</div>
-                #     <div class="Ere_prod_mconts_R">
-                #         <!-- 책소개 이미지 -->
-                #
-                #         <div style="word-break:break-all;"><div><p>......</p></div></div>
-                #         <div class="Ere_line2"></div>
-                #     </div>
-                #     <div class="Ere_clear"></div>
-                # </div>
-                # <!-- 출판사 제공 책소개 end-->
-                if not introduce_nodes:
-                    introduce_nodes = rootDesc.xpath(
-                        './/div[@class="Ere_prod_mconts_box"]//div[text()="출판사 제공 책소개"]/..'
-                        '//div[@class="Ere_prod_mconts_R"]')
-                
-                if introduce_nodes and not comments:
-                    # self.log('Got a comments description node')
-                    self._removeTags(introduce_nodes[0], ["object", "script", "style"])
-                    # comments = tostring(introduce_nodes[0], method='html', encoding=six.text_type).strip()
-                    comments = tostring(introduce_nodes[0], method='html').strip()
-                    # self.log('Raw comments:',comments)
-                    comments = sanitize_comments_html(comments)
-                    comments = comments.replace('<h2>Overview</h2>', '')
-                    # open('E:\\aladin_comments.html', 'wb').write(comments)
-            except:
-                msg = 'Failed to parse aladin details page: %r' % urlDesc
-                self.log.exception(msg)
+                try:
+                    rawDesc = rawDesc.decode('utf-8', errors='replace')
+                    rootDesc = fromstring(clean_ascii_chars(rawDesc))
+                except:
+                    msg = 'Failed to parse aladin details page: %r' % urlDesc
+                    self.log.exception(msg)
+                    continue
 
-            #     <!-- 목차 시작 -->
-            #     <div class="Ere_prod_mconts_box">
-            #         <div class="Ere_prod_mconts_LL">목차</div>
-            #         <div class="Ere_prod_mconts_LS">목차</div>
-            #         <div class="Ere_prod_mconts_R" id="tocTemplate">
-            #             <div id="div_TOC_Short" style="word-break: break-all">
-            #             <a href="javascript:fn_show_introduce_TOC('TOC')"><p><B>0장 도입</B>
-            if rootDesc is not None and append_toc and not toc:
-                toc_node = rootDesc.xpath('//div[@id="div_TOC_All"]//p')
-                if not toc_node:
-                    toc_node = rootDesc.xpath('//div[@id="div_TOC_Short"]//p')
-                if toc_node:
-                    toc = tostring(toc_node[0], method='html')
-                    toc = sanitize_comments_html(toc)
-            if comments and (toc or not append_toc):
-                break
-        if not comments:
-            # Look for description in a meta
+                for section_id, heading, labels in section_defs:
+                    if section_id in sections:
+                        continue
+                    node = self._find_aladin_content_node(rootDesc, labels)
+                    html = self._content_node_to_comments_html(node)
+                    if html:
+                        sections[section_id] = (heading, html)
+
+                if append_toc and not toc:
+                    toc = self._find_toc_html(rootDesc)
+
+        if 'comments' not in sections:
             description_node = root.xpath('//meta[@name="Description"]/@content')
             if description_node:
-                # return description_node[0]
-                comments = description_node[0]
-        if comments:
-            comments = '<div id="comments">' + comments + '</div>'
+                sections['comments'] = (None, sanitize_comments_html(description_node[0]))
+
+        comments = ''
+        for section_id, (heading, html) in sections.items():
+            if not html:
+                continue
+            if heading:
+                comments += '<h3>[%s]</h3><div id="%s">%s</div>' % (heading, section_id, html)
+            else:
+                comments += '<div id="comments">%s</div>' % html
+
         if toc:
-            comments += '<h3>[목차]</h3><div id="toc">' + toc + "</div>"
+            comments += '<h3>[목차]</h3><div id="toc">%s</div>' % toc
+
         if comments:
             comments_suffix = cfg.DEFAULT_STORE_VALUES[cfg.KEY_COMMENTS_SUFFIX]
             comments_suffix = cfg.plugin_prefs[cfg.STORE_NAME].get(cfg.KEY_COMMENTS_SUFFIX, comments_suffix)
-            # comments += '<hr /><div><div style="float:right">[aladin.co.kr]</div></div>'
             if comments_suffix:
                 comments += comments_suffix
         return comments
-    
+
     def parse_cover(self, root):
         # http://image.aladin.co.kr/product/466/2/cover/8971460326_1.jpg
         # http://image.aladin.co.kr/product/466/2/letslook/8971460326_f.jpg
