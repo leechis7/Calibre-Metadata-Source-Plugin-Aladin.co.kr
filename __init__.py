@@ -118,7 +118,7 @@ class Aladin_co_kr(Source):
             # q = q[1:]
             
             q = '/search/wsearchresult.aspx?SearchTarget=All&SearchWord=' + q
-        
+   
         if not q:
             return None
         # by sseeookk
@@ -277,7 +277,7 @@ class Aladin_co_kr(Source):
             if title_nodes:
                 title = re.sub(r"\s{2,}", " ", title_nodes[0].text_content().strip())
             if not title:
-                log.info('Could not find title')
+                log.info('Could not find titlexxxxxxx')
                 continue
             # Strip off any series information from the title
             log.info('FOUND TITLE:', title.encode(self.encoding, errors='replace'))

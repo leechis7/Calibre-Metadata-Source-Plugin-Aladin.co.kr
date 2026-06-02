@@ -224,7 +224,10 @@ class Worker(Thread):  # Get details
         # | <a href="/shop/common/wseriesitem.aspx?SRID=111846" class="Ere_sub1_title Ere_sub_blue">Head First 시리즈 3</a>
         # ......
         # </div>
-        title_node = root.xpath('//a[@class="Ere_bo_title"]/..')
+        
+        # 2023-08-03 수정
+        #title_node = root.xpath('//a[@class="Ere_bo_title"]/..')
+        title_node = root.xpath('//span[@class="Ere_bo_title"]/..')
         if not title_node:
             return None, None, None
         title_text = title_node[0].text_content().strip()

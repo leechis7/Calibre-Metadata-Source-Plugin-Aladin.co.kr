@@ -10,17 +10,13 @@ import copy
 from functools import partial
 
 # 20141108 16:27:50
-# Guide for porting plugin code to Qt 5
-# http://www.mobileread.com/forums/showthread.php?s=7481b956408dfd9ac4f896e25cc72a1d&t=242223
 # from PyQt4 import QtGui
 # from PyQt4.Qt import (QLabel,QTableWidgetItem, QVBoxLayout, Qt, QGroupBox, QTableWidget,
-#                      QCheckBox, QAbstractItemView, QHBoxLayout, QIcon,QInputDialog)
+#                      QCheckBox, QAbstractItemView, QHBoxLayout, QIcon, QInputDialog)
 try:
     from PyQt4 import QtGui
 except ImportError:
-    # from PyQt5 import QtGui
-    # from PyQt5 import QtWidgets as QtGui
-    from PyQt5 import Qt as QtGui
+    from PyQt5 import QtGui
 try:
     from PyQt4.Qt import (QLabel, QTableWidgetItem, QVBoxLayout, Qt, QGroupBox, QTableWidget,
                           QCheckBox, QAbstractItemView, QHBoxLayout, QIcon, QInputDialog)
@@ -28,6 +24,11 @@ except ImportError:
     from PyQt5.Qt import (QLabel, QTableWidgetItem, QVBoxLayout, Qt, QGroupBox, QTableWidget,
                           QCheckBox, QAbstractItemView, QHBoxLayout, QIcon, QInputDialog)
 
+try:
+    from PyQt4.QtGui import (QSpinBox)
+except ImportError:
+    from PyQt5.Qt import (QSpinBox)
+    
 from calibre.gui2 import get_current_db, question_dialog, error_dialog
 
 # 20141108

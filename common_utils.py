@@ -15,7 +15,7 @@ try:
     from PyQt4 import QtGui
 except ImportError:
     # from PyQt5 import QtGui
-    from PyQt5 import Qt as QtGui
+    from PyQt5 import QtGui
 try:
     from PyQt4.Qt import (Qt, QIcon, QPixmap, QLabel, QDialog, QHBoxLayout,
                           QTableWidgetItem, QFont, QLineEdit, QComboBox,
@@ -26,8 +26,9 @@ except ImportError:
     from PyQt5.Qt import (Qt, QIcon, QPixmap, QLabel, QDialog, QHBoxLayout,
                           QTableWidgetItem, QFont, QLineEdit, QComboBox,
                           QVBoxLayout, QDialogButtonBox, QStyledItemDelegate, QDateTime,
-                          QRegExpValidator, QRegExp, QVariant, QTextEdit,
-                          QListWidget, QAbstractItemView)
+                          QTextEdit, QListWidget, QAbstractItemView)
+    #from PyQt5.QtCore import (QRegExp, QVariant)
+    #from PyQt5.QtGui import QRegExpValidator
 
 from calibre.constants import iswindows
 from calibre.gui2 import gprefs, error_dialog, UNDEFINED_QDATETIME, info_dialog
