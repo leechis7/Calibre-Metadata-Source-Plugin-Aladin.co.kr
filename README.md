@@ -3,6 +3,12 @@ Calibre-Metadata-Source-Plugin-Aladin.co.kr
 
 [Calibre](https://calibre-ebook.com/)에서 [Aladin.co.kr](http://www.aladin.co.kr)의 도서 메타데이터와 표지를 가져오는 메타데이터 소스 플러그인입니다.
 
+유지보수 포크
+-------------
+이 저장소는 YongSeok Choi(`sseeookk`)가 GPL-3.0으로 공개한 [원본 플러그인](https://github.com/sseeookk/Calibre-Aladin.co.kr-Metadata-Source-Plugin)을 기반으로 한 유지보수 포크입니다.
+
+원본의 마지막 공식 릴리스는 2021-06-26의 `1.0.1`이며, `leechis7`가 2026-06-02부터 알라딘 사이트 변화에 맞춰 검색, 문자셋, 책소개 처리를 유지·개선하고 있습니다. 원 저작권과 [GPL-3.0 라이선스](LICENSE)는 그대로 유지됩니다.
+
 현재 버전
 ---------
 1.1.1
@@ -17,7 +23,7 @@ Calibre-Metadata-Source-Plugin-Aladin.co.kr
 
 설치 방법
 ---------
-1. [releases](https://github.com/sseeookk/Calibre-Metadata-Source-Plugin-Aladin.co.kr/releases)에서 최신 버전 zip 파일을 다운로드합니다. 예: `Calibre-Metadata-Source-Plugin-Aladin.co.kr-v1.1.1.zip`
+1. [releases](https://github.com/leechis7/Calibre-Metadata-Source-Plugin-Aladin.co.kr/releases)에서 최신 버전 zip 파일을 다운로드합니다. 예: `Calibre-Metadata-Source-Plugin-Aladin.co.kr-v1.1.1.zip`
 2. Calibre에서 `Preferences`를 엽니다.
 3. `Advanced` -> `Plugins`로 이동합니다.
 4. `Load plugin from file`을 누르고 다운로드한 zip 파일을 선택합니다.
@@ -28,4 +34,3 @@ Calibre Plugins Forum
 ---------------------
 [Metadata Source Plugin] Aladin.co.kr (KO) - MobileRead Forums.  
 https://www.mobileread.com/forums/showthread.php?t=236797
-
