@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # vim:fileencoding=UTF-8:ts=4:sw=4:sta:et:sts=4:ai
 
 # Modified by leechis7 beginning 2026-06-02.
@@ -17,20 +17,30 @@ from functools import partial
 # from PyQt4.Qt import (QLabel,QTableWidgetItem, QVBoxLayout, Qt, QGroupBox, QTableWidget,
 #                      QCheckBox, QAbstractItemView, QHBoxLayout, QIcon, QInputDialog)
 try:
-    from PyQt4 import QtGui
+    from qt.core import (
+        QAbstractItemView, QCheckBox, QGroupBox, QHBoxLayout,
+        QIcon, QInputDialog, QLabel, QLineEdit, QSizePolicy, QSpacerItem,
+        QSpinBox, Qt, QTableWidget, QTableWidgetItem, QToolButton,
+        QVBoxLayout, QGridLayout
+    )
+    import qt.core as QtGui
 except ImportError:
-    from PyQt5 import QtGui
-try:
-    from PyQt4.Qt import (QLabel, QTableWidgetItem, QVBoxLayout, Qt, QGroupBox, QTableWidget,
-                          QCheckBox, QAbstractItemView, QHBoxLayout, QIcon, QInputDialog)
-except ImportError:
-    from PyQt5.Qt import (QLabel, QTableWidgetItem, QVBoxLayout, Qt, QGroupBox, QTableWidget,
-                          QCheckBox, QAbstractItemView, QHBoxLayout, QIcon, QInputDialog)
-
-try:
-    from PyQt4.QtGui import (QSpinBox)
-except ImportError:
-    from PyQt5.Qt import (QSpinBox)
+    try:
+        from PyQt5 import QtGui
+        from PyQt5.Qt import (
+            QLabel, QTableWidgetItem, QVBoxLayout, Qt, QGroupBox, QTableWidget,
+            QCheckBox, QAbstractItemView, QHBoxLayout, QIcon, QInputDialog, QSpinBox
+        )
+    except ImportError:
+        from PyQt4 import QtGui
+        from PyQt4.Qt import (
+            QLabel, QTableWidgetItem, QVBoxLayout, Qt, QGroupBox, QTableWidget,
+            QCheckBox, QAbstractItemView, QHBoxLayout, QIcon, QInputDialog
+        )
+        try:
+            from PyQt4.QtGui import QSpinBox
+        except ImportError:
+            pass
     
 from calibre.gui2 import get_current_db, question_dialog, error_dialog
 

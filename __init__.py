@@ -43,8 +43,8 @@ class Aladin_co_kr(Source):
     name = 'Aladin.co.kr'
     description = _('Downloads metadata and covers from aladin.co.kr')
     author = 'YongSeok Choi'
-    version = (1, 1, 1)
-    minimum_calibre_version = (0, 8, 0)
+    version = (1, 1, 2)
+    minimum_calibre_version = (5, 0, 0)
     
     (_, encoding) = locale.getdefaultlocale()
     if not encoding: encoding = "utf-8"
@@ -57,17 +57,17 @@ class Aladin_co_kr(Source):
     supports_gzip_transfer_encoding = True
     
     # 201602 aladin url patterns :
-    # http://www.aladin.co.kr/shop/wproduct.aspx?ItemId=27942886
+    # https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=27942886
     
     # 201403 aladin url patterns :
-    # http://www.aladin.co.kr/shop/wproduct.aspx?ISBN=8965744024
-    # http://www.aladin.co.kr/search/wsearchresult.aspx?SearchType=3&KeyISBN=9788965744023
-    # http://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=9788965744023&x=30&y=18
-    # http://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Book&SearchFieldEnable=1&KeyTitle=&KeyAuthor=&KeySubject=&KeyPublisher=&KeyTOC=&KeyYearStart=&KeyMonthStart=&KeyYearEnd=&KeyMonthEnd=&SortOrder=11
+    # https://www.aladin.co.kr/shop/wproduct.aspx?ISBN=8965744024
+    # https://www.aladin.co.kr/search/wsearchresult.aspx?SearchType=3&KeyISBN=9788965744023
+    # https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=9788965744023&x=30&y=18
+    # https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Book&SearchFieldEnable=1&KeyTitle=&KeyAuthor=&KeySubject=&KeyPublisher=&KeyTOC=&KeyYearStart=&KeyMonthStart=&KeyYearEnd=&KeyMonthEnd=&SortOrder=11
     # SearchTarget - All, Book, Foreign, EBook, Used, Music, DVD
     # SortOrder 정렬순서(select="SortOrder") -  11 정확도순,  1 상품명순,  2 판매량순,  3 평점순,  4 리뷰순,  5 출간일순,  9 저가격순
     
-    BASE_URL = 'http://www.aladin.co.kr'
+    BASE_URL = 'https://www.aladin.co.kr'
 
     def _read_response_html(self, response):
         raw = response.read().strip()

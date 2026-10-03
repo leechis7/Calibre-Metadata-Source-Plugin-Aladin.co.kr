@@ -231,6 +231,10 @@ class Worker(Thread):  # Get details
         #title_node = root.xpath('//a[@class="Ere_bo_title"]/..')
         title_node = root.xpath('//span[@class="Ere_bo_title"]/..')
         if not title_node:
+            title_node = root.xpath('//a[@class="Ere_bo_title"]/..')
+        if not title_node:
+            title_node = root.xpath('//*[@class="Ere_bo_title"]/..')
+        if not title_node:
             return None, None, None
         title_text = title_node[0].text_content().strip()
         
@@ -421,7 +425,7 @@ class Worker(Thread):  # Get details
 
         if self.isbn:
             for name in names:
-                urlDesc = "http://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=%s&name=%s&type=0&date=%s" % \
+                urlDesc = "https://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=%s&name=%s&type=0&date=%s" % \
                           (self.isbn, name, datetime.datetime.now().hour)
 
                 try:
