@@ -14,6 +14,14 @@ def valid_id(value):
     return bool(re.fullmatch(r'\d+', value))
 
 
+def is_session_redirect(requested_url, response_url):
+    """YES24 sets a validation cookie and sends a fresh session to its home page."""
+    requested, response = urlsplit(requested_url), urlsplit(response_url)
+    return (requested.hostname == response.hostname == 'www.yes24.com'
+            and requested.path.lower().startswith('/product/')
+            and response.path.lower() in ('/', '/main/default.aspx'))
+
+
 def search_results(raw):
     root = fromstring(decode_html(raw))
     result = []

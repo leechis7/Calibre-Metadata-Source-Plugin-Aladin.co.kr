@@ -4,13 +4,13 @@ Calibre에서 **알라딘·YES24·교보문고**의 도서 메타데이터와 �
 
 ## 설치
 
-| 서점 | Calibre 표시 이름 | v1.2.1 설치 파일 |
+| 서점 | Calibre 표시 이름 | v1.2.2 설치 파일 |
 | --- | --- | --- |
-| 알라딘 | `Aladin.co.kr` | [Aladin ZIP](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases/download/v1.2.1/Calibre-Metadata-Plugin-Aladin-v1.2.1.zip) |
-| YES24 | `YES24.com` | [YES24 ZIP](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases/download/v1.2.1/Calibre-Metadata-Plugin-YES24-v1.2.1.zip) |
-| 교보문고 | `Kyobobook.co.kr` | [Kyobo ZIP](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases/download/v1.2.1/Calibre-Metadata-Plugin-Kyobo-v1.2.1.zip) |
+| 알라딘 | `Aladin.co.kr` | [Aladin ZIP](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases/download/v1.2.2/Calibre-Metadata-Plugin-Aladin-v1.2.2.zip) |
+| YES24 | `YES24.com` | [YES24 ZIP](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases/download/v1.2.2/Calibre-Metadata-Plugin-YES24-v1.2.2.zip) |
+| 교보문고 | `Kyobobook.co.kr` | [Kyobo ZIP](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases/download/v1.2.2/Calibre-Metadata-Plugin-Kyobo-v1.2.2.zip) |
 
-위 링크는 **v1.2.1 Release 공개 후** 사용할 수 있습니다. 공개 전에는 아래 빌드 명령으로 생성한 `dist/`의 ZIP을 사용합니다. 실제 배포된 버전은 [전체 릴리즈](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases)에서 확인합니다.
+위 링크는 **v1.2.2 Release 공개 후** 사용할 수 있습니다. 공개 전에는 아래 빌드 명령으로 생성한 `dist/`의 ZIP을 사용합니다. 실제 배포된 버전은 [전체 릴리즈](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases)에서 확인합니다.
 
 1. 원하는 ZIP을 다운로드합니다. 압축을 풀지 않습니다.
 2. Calibre `환경설정 → 고급 → 플러그인 → 파일에서 플러그인 불러오기`에서 설치합니다.
@@ -46,6 +46,7 @@ shared/               공통 파싱·Calibre 인터페이스·설정·기존 Qt 
 scripts/build.py      독립 ZIP 생성과 SHA-256 체크섬
 scripts/release.py    GitHub CLI 릴리즈 미리보기/업로드
 scripts/smoke.py      선택 실행 실시간 HTTP 검사
+scripts/smoke_calibre.py 실제 Calibre 런타임·ZIP 설치·검색·표지 검사
 tests/                서점별 회귀·인터페이스·ZIP 검사
 .github/workflows/    태그 기반 검사·빌드·Release 자동화
 ```
@@ -68,7 +69,15 @@ python scripts/smoke_mechanize.py # 실제 mechanize로 소스 identify/cover �
 
 검사에는 축약한 실제 HTML/JSON 구조, 알라딘 파서 회귀, 새 소스의 큐·캐시·취소·제한시간·옵션·ISBN 확인, ZIP 구조와 재현성 검증이 포함됩니다. Calibre 메타데이터 API는 대역을 사용하지만 HTTP 응답은 실제 mechanize.response_seek_wrapper로도 검사합니다. 앱 설치 검사를 대체하지 않습니다.
 
-2026-10-03 파서 실시간 검증에서 YES24·교보의 ISBN/제목 검색, 책소개·목차·서평과 표지 다운로드, 알라딘 ISBN/비동기 책소개를 확인했습니다. 2026-10-05에는 트렌드 코리아 2027의 YES24·교보 제목/ISBN 검색과 표지 다운로드를 실제 mechanize HTTP로 확인했고, 전체 회귀 테스트 37개가 통과했습니다. 검사한 알라딘 아몬드 판본은 목차를 제공하지 않았습니다. 개발 환경에 Calibre 실행 파일이 없어 앱 내 설치·GUI 검증은 미실시입니다.
+2026-10-05에는 Portable Calibre 9.15.0의 실제 플러그인 로더·브라우저·메타데이터 객체로 세 서점의 ‘트렌드 코리아 2027’ 제목/ISBN 검색, 책소개·목차 및 표지 다운로드를 확인했습니다. YES24의 첫 요청이 세션 확인 후 홈페이지로 이동하는 현상을 재현하고 자동 재요청으로 회복되는 것도 확인했습니다. 전체 회귀 테스트 40개가 통과했습니다. GUI 조작 검증은 별도입니다.
+
+실제 Calibre 검사는 작업 폴더에 별도 설정을 만들어 실행합니다. 먼저 ZIP을 빌드한 뒤 PowerShell에서 실행하세요.
+
+```powershell
+$env:CALIBRE_CONFIG_DIRECTORY = Join-Path (Get-Location) '.dev-deps\calibre-smoke-settings'
+& 'C:\tools\Calibre Portable\Calibre\calibre-debug.exe' -e scripts/smoke_calibre.py
+# YES24만 검사: 마지막에 -- --store yes24 추가
+```
 
 ## Release
 
@@ -77,10 +86,10 @@ python scripts/smoke_mechanize.py # 실제 mechanize로 소스 identify/cover �
 ```sh
 python scripts/release.py        # 빌드하고 업로드 계획만 표시
 git add <변경한 파일>
-git commit -m "Release 1.2.1: fix mechanize responses and Korean logs"
-git tag v1.2.1
+git commit -m "Release 1.2.2: recover YES24 session redirects"
+git tag v1.2.2
 git push origin main
-git push origin v1.2.1
+git push origin v1.2.2
 ```
 
 태그가 올라가면 GitHub Actions가 테스트·빌드하고, 태그와 모든 플러그인 버전이 일치할 때 ZIP 3개와 체크섬을 Release에 업로드합니다. 사이트 상태에 영향을 받는 실시간 smoke는 CI에서 자동 실행하지 않습니다.

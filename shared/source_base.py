@@ -61,15 +61,25 @@ class KoreanBookSource(Source):
                 raise TimeoutError('Metadata download timed out')
             with closing(browser.open_novisit(url, timeout=remaining)) as response:
                 raw = response.read()
-            if not raw.strip() and not abort.is_set():
+                response_url = response.geturl() if hasattr(response, 'geturl') else url
+            redirected = getattr(adapter, 'is_session_redirect', lambda requested, actual: False)(url, response_url)
+            if (redirected or not raw.strip()) and not abort.is_set():
                 # Some CDN entries return a cached empty 200 response. Retry once
                 # with a distinct cache key, under the original request deadline.
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise TimeoutError('Metadata download timed out')
-                retry = url + ('&' if '?' in url else '?') + '_calibre=' + str(time.time_ns())
+                # YES24's first request can set a validation cookie and redirect
+                # to its home page. Reuse this browser's cookies for the original
+                # request; the home page is not an empty search result.
+                if redirected:
+                    log.info('서점 세션 확인 후 원래 요청을 다시 시도합니다: %s' % url)
+                retry = url if redirected else url + ('&' if '?' in url else '?') + '_calibre=' + str(time.time_ns())
                 with closing(browser.open_novisit(retry, timeout=remaining)) as response:
                     raw = response.read()
+                    response_url = response.geturl() if hasattr(response, 'geturl') else retry
+                if getattr(adapter, 'is_session_redirect', lambda requested, actual: False)(url, response_url):
+                    raise ValueError('Store session redirect persisted: ' + url)
             if not raw.strip():
                 raise ValueError('Empty HTTP response: ' + url)
             return cleaner.decode_html(raw)

@@ -32,3 +32,10 @@ class YES24Tests(unittest.TestCase):
 
     def test_missing_result(self):
         self.assertEqual(worker.search_results('<html>검색 결과 없음</html>'), [])
+
+    def test_session_redirect_only_matches_yes24_home(self):
+        query = 'https://www.yes24.com/Product/Search?query=test'
+        self.assertTrue(worker.is_session_redirect(query, 'https://www.yes24.com/Main/default.aspx'))
+        self.assertTrue(worker.is_session_redirect('https://www.yes24.com/Product/Goods/1', 'https://www.yes24.com/'))
+        self.assertFalse(worker.is_session_redirect(query, query))
+        self.assertFalse(worker.is_session_redirect(query, 'https://evil.example/Main/default.aspx'))

@@ -1,5 +1,6 @@
 """Integration contract tests with small doubles; not a Calibre installation test."""
 import importlib
+import itertools
 from io import BytesIO
 from queue import Queue
 import re
@@ -86,6 +87,8 @@ class Log:
         self.exceptions = []
     def error(self, *args):
         pass
+    def info(self, *args):
+        pass
     def exception(self, *args):
         self.exceptions.append(args)
 
@@ -124,6 +127,49 @@ def load_source(store):
 
 
 class CalibreContractTests(unittest.TestCase):
+    def test_yes24_cookie_validation_redirect_retries_search_and_details(self):
+        for direct in (False, True):
+            with self.subTest(direct=direct):
+                source = self.yes24()
+                first = source.detail_url.format(id='125557465') if direct else source.search_url.format(query='9791171711673')
+                class RedirectBrowser(MechanizeBrowser):
+                    def open_novisit(self, url, timeout):
+                        if not self.calls:
+                            self.calls.append(url)
+                            self.last_timeout = timeout
+                            # A nonempty YES24 home page after setting its session cookie.
+                            response = make_response(b'<html>Home, no search results</html>', [], 'https://www.yes24.com/Main/default.aspx')
+                            response.close = unittest.mock.Mock(wraps=response.close)
+                            self.responses.append(response)
+                            return response
+                        self.retry_timeout = timeout
+                        return super().open_novisit(url, timeout)
+                browser = RedirectBrowser(source.browser.routes)
+                source.browser = browser
+                q, log = Queue(), Log()
+                ids = {'yes24.com': '125557465'} if direct else {'isbn': '9791171711673'}
+                with patch(source.__class__.__mro__[1].__module__ + '.time.monotonic', side_effect=itertools.count(0, 0.1)):
+                    source.identify(log, q, Event(), identifiers=ids)
+                self.assertEqual(q.get_nowait().isbn, '9791171711673')
+                self.assertEqual(browser.calls[:2], [first, first])
+                self.assertLess(browser.retry_timeout, browser.last_timeout)
+                self.assertFalse(log.exceptions)
+                self.assertTrue(all(r.close.called for r in browser.responses))
+
+    def test_yes24_repeated_session_redirect_is_bounded_and_logged(self):
+        source = self.yes24()
+        class RedirectBrowser(MechanizeBrowser):
+            def open_novisit(self, url, timeout):
+                self.calls.append(url)
+                return make_response(b'<html>Home</html>', [], 'https://www.yes24.com/Main/default.aspx')
+        browser = RedirectBrowser({})
+        source.browser = browser
+        q, log = Queue(), Log()
+        source.identify(log, q, Event(), identifiers={'isbn': '9791171711673'})
+        self.assertTrue(q.empty())
+        self.assertEqual(len(browser.calls), 2)
+        self.assertTrue(log.exceptions)
+
     def yes24(self):
         source = load_source('yes24')
         source.browser = Browser({
