@@ -1,6 +1,7 @@
 """Calibre integration; each archive gets its own copy and cache namespace."""
 import importlib
 import time
+from contextlib import closing
 from queue import Queue
 from urllib.parse import quote
 
@@ -58,7 +59,7 @@ class KoreanBookSource(Source):
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError('Metadata download timed out')
-            with browser.open_novisit(url, timeout=remaining) as response:
+            with closing(browser.open_novisit(url, timeout=remaining)) as response:
                 raw = response.read()
             if not raw.strip() and not abort.is_set():
                 # Some CDN entries return a cached empty 200 response. Retry once
@@ -67,7 +68,7 @@ class KoreanBookSource(Source):
                 if remaining <= 0:
                     raise TimeoutError('Metadata download timed out')
                 retry = url + ('&' if '?' in url else '?') + '_calibre=' + str(time.time_ns())
-                with browser.open_novisit(retry, timeout=remaining) as response:
+                with closing(browser.open_novisit(retry, timeout=remaining)) as response:
                     raw = response.read()
             if not raw.strip():
                 raise ValueError('Empty HTTP response: ' + url)
@@ -172,7 +173,7 @@ class KoreanBookSource(Source):
         if not url or abort.is_set() or remaining <= 0:
             return
         try:
-            with self.browser.open_novisit(url, timeout=remaining) as response:
+            with closing(self.browser.open_novisit(url, timeout=remaining)) as response:
                 raw = response.read()
             if raw and not abort.is_set():
                 result_queue.put((self, raw))

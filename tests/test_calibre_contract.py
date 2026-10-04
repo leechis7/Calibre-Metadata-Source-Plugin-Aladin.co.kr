@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from support import fixture, load_adapter, ROOT
+from mechanize import make_response
 
 
 def check_isbn(value):
@@ -61,10 +62,23 @@ class Browser:
     def __init__(self, routes):
         self.routes, self.calls = routes, []
         self.addheaders = []
+        self.responses = []
     def open_novisit(self, url, timeout):
         self.calls.append(url)
         self.last_timeout = timeout
-        return BytesIO(self.routes[url])
+        response = Response(self.routes[url])
+        self.responses.append(response)
+        return response
+
+
+class Response:
+    """Like mechanize responses: read/close, with no context-manager protocol."""
+    def __init__(self, raw):
+        self.stream = BytesIO(raw)
+    def read(self):
+        return self.stream.read()
+    def close(self):
+        self.stream.close()
 
 
 class Log:
@@ -74,6 +88,16 @@ class Log:
         pass
     def exception(self, *args):
         self.exceptions.append(args)
+
+
+class MechanizeBrowser(Browser):
+    def open_novisit(self, url, timeout):
+        self.calls.append(url)
+        response = make_response(self.routes[url], [('Content-Type', 'text/html; charset=utf-8')], url)
+        # Record close() separately from mechanize's cached body semantics.
+        response.close = unittest.mock.Mock(wraps=response.close)
+        self.responses.append(response)
+        return response
 
 
 def load_source(store):
@@ -122,6 +146,48 @@ class CalibreContractTests(unittest.TestCase):
         self.assertEqual(covers.get_nowait(), (source, b'cover-bytes'))
         self.assertEqual(len(source.browser.calls), 3)
         self.assertFalse(log.exceptions)
+        self.assertTrue(all(r.stream.closed for r in source.browser.responses))
+
+    def test_real_mechanize_search_details_and_cover(self):
+        source, queue, log = self.yes24(), Queue(), Log()
+        source.browser = MechanizeBrowser(source.browser.routes)
+        source.identify(log, queue, Event(), identifiers={'isbn': '9791171711673'})
+        self.assertEqual(queue.get_nowait().title, '하루 한 장 나의 어휘력을 위한 필사 노트')
+        covers = Queue()
+        source.download_cover(log, covers, Event(), identifiers={'isbn': '9791171711673'})
+        self.assertEqual(covers.get_nowait()[1], b'cover-bytes')
+        self.assertFalse(log.exceptions)
+        for response in source.browser.responses:
+            self.assertEqual(response.__class__.__name__, 'response_seek_wrapper')
+            response.close.assert_called_once()
+
+    def test_real_mechanize_empty_response_retry(self):
+        source, queue, log = self.yes24(), Queue(), Log()
+        browser = MechanizeBrowser(source.browser.routes)
+        original = browser.open_novisit
+        empty = make_response(b'', [], source.detail_url.format(id='125557465'))
+        empty.close = unittest.mock.Mock(wraps=empty.close)
+        calls = []
+        def open_(url, timeout):
+            calls.append(url)
+            return empty if len(calls) == 1 else original(url.split('?_calibre=')[0], timeout)
+        browser.open_novisit = open_
+        source.browser = browser
+        source.identify(log, queue, Event(), identifiers={'yes24.com': '125557465'})
+        self.assertEqual(queue.qsize(), 1)
+        self.assertFalse(log.exceptions)
+        empty.close.assert_called_once()
+        browser.responses[0].close.assert_called_once()
+
+    def test_read_failure_closes_response(self):
+        source, queue, log = self.yes24(), Queue(), Log()
+        response = Response(b'')
+        response.read = unittest.mock.Mock(side_effect=OSError('Read failed'))
+        source.browser.open_novisit = lambda url, timeout: response
+        source.identify(log, queue, Event(), identifiers={'yes24.com': '125557465'})
+        self.assertTrue(queue.empty())
+        self.assertTrue(response.stream.closed)
+        self.assertEqual(len(log.exceptions), 1)
 
     def test_uncached_cover_identifies(self):
         source, queue, log = self.yes24(), Queue(), Log()

@@ -10,6 +10,11 @@ from .text_cleaner import decode_html, meta, safe_url
 BASE = 'https://product.kyobobook.co.kr'
 
 
+def mapping(value):
+    # Flight represents absent optional objects as the string "$undefined".
+    return value if isinstance(value, dict) else {}
+
+
 def valid_id(value):
     return bool(re.fullmatch(r'S\d{12}', value))
 
@@ -76,18 +81,18 @@ def parse_details(raw, url):
     if not match:
         raise ValueError('교보 상품 ID가 없습니다.')
     data = product_data(root, match[1])
-    top, summary = data['top'], data.get('summary') or {}
-    basic = summary.get('basicInfo') or {}
-    intro = summary.get('intro') or {}
+    top, summary = data['top'], mapping(data.get('summary'))
+    basic = mapping(summary.get('basicInfo'))
+    intro = mapping(summary.get('intro'))
     authors = []
-    for group in top.get('authors', []):
+    for group in top.get('authors') or []:
         # Keep writers, exclude translator/illustrator roles from the authors field.
-        if (group.get('role') or {}).get('roleCode') == '001':
-            authors.extend(a.get('chrcName', '') for a in group.get('info', []))
-    publisher = top.get('publisher') or {}
+        if mapping(group.get('role')).get('roleCode') == '001':
+            authors.extend(a.get('chrcName', '') for a in group.get('info') or [])
+    publisher = mapping(top.get('publisher'))
     tags = []
-    for group in intro.get('categoriList', []):
-        tags.extend(c['label'] for c in group.get('bookCategory', [])[1:] if c.get('label'))
+    for group in intro.get('categoriList') or []:
+        tags.extend(c['label'] for c in (group.get('bookCategory') or [])[1:] if c.get('label'))
     langs = {'한국어': 'kor', '영어': 'eng', '일본어': 'jpn', '중국어': 'zho', '독일어': 'deu', '프랑스어': 'fra'}
     language = basic.get('language')
     if not language and top.get('saleCmdtDvsnCode') == 'KOR':
@@ -95,16 +100,16 @@ def parse_details(raw, url):
     cover = safe_url(meta(root, 'og:image'))
     if 'contents.kyobobook.co.kr/sih/fit-in/' in cover:
         cover = re.sub(r'/fit-in/\d+x\d+/', '/fit-in/1000x0/', cover)
-    score = (top.get('reviewScore') or {}).get('score')
+    score = mapping(top.get('reviewScore')).get('score')
     return {
         'id': match[1], 'title': top.get('title', ''),
         'authors': list(dict.fromkeys(a for a in authors if a)),
         'isbn': basic.get('isbn') or top.get('cmdtCode'),
-        'publisher': (publisher.get('label') or {}).get('text', ''), 'pubdate': publisher.get('pubDate'),
+        'publisher': mapping(publisher.get('label')).get('text', ''), 'pubdate': publisher.get('pubDate'),
         'cover': cover, 'languages': [langs[language]] if language in langs else [],
         'rating': max(0, min(5, float(score) / 2)) if score is not None else None,
         'tags': list(dict.fromkeys(tags)),
-        'sections': [('책소개', '\n\n'.join(x['content'] for x in intro.get('explanation', []) if x.get('content') and x.get('anntDvsnCode') in ('001', '002')))],
+        'sections': [('책소개', '\n\n'.join(x['content'] for x in intro.get('explanation') or [] if x.get('content') and x.get('anntDvsnCode') in ('001', '002')))],
     }
 
 
@@ -114,6 +119,6 @@ def enrich(book, fetch):
     middle = (response.get('data') or {}).get('middle')
     if response.get('error') or not isinstance(middle, dict):
         raise ValueError('교보 추가 도서정보 API 응답 형식이 올바르지 않습니다.')
-    authors = '\n\n'.join(a['name'] + '\n' + a['intro'] for a in middle.get('authorInfoList', []) if a.get('name') and a.get('intro'))
+    authors = '\n\n'.join(a['name'] + '\n' + a['intro'] for a in middle.get('authorInfoList') or [] if a.get('name') and a.get('intro'))
     book['sections'].extend([('저자소개', authors), ('출판사 리뷰', middle.get('pubReview')),
                              ('목차', middle.get('contentTableList'))])

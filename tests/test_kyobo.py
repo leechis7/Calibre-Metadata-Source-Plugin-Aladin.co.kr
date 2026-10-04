@@ -6,6 +6,29 @@ worker = load_adapter('kyobo')
 
 
 class KyoboTests(unittest.TestCase):
+    def test_null_optional_lists(self):
+        root = worker.fromstring(fixture('kyobo_detail.html'))
+        data = worker.product_data(root, 'S000000610625')
+        data['top']['authors'] = None
+        data['summary']['intro'].update(categoriList=None, explanation=None)
+        raw = '<script id="__NEXT_DATA__">' + json.dumps({'props': {'pageProps': {'data': data}}}) + '</script>'
+        book = worker.parse_details(raw, 'https://product.kyobobook.co.kr/detail/S000000610625')
+        self.assertEqual(book['authors'], [])
+        self.assertEqual(book['tags'], [])
+        self.assertEqual(book['sections'], [('책소개', '')])
+
+    def test_undefined_optional_objects(self):
+        root = worker.fromstring(fixture('kyobo_detail.html'))
+        data = worker.product_data(root, 'S000000610625')
+        data['top'].update(authors=None, publisher='$undefined', reviewScore='$undefined')
+        data['summary'].update(basicInfo='$undefined', intro='$undefined')
+        raw = '<script id="__NEXT_DATA__">' + json.dumps({'props': {'pageProps': {'data': data}}}) + '</script>'
+        book = worker.parse_details(raw, 'https://product.kyobobook.co.kr/detail/S000000610625')
+        self.assertEqual(book['title'], '아몬드')
+        self.assertEqual(book['authors'], [])
+        self.assertEqual(book['publisher'], '')
+        self.assertIsNone(book['rating'])
+
     def test_real_structure_search(self):
         self.assertEqual(worker.search_results(fixture('kyobo_search.html')), ['https://product.kyobobook.co.kr/detail/S000000610625'])
 

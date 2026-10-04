@@ -5,7 +5,10 @@ from pathlib import Path
 import re
 from collections import OrderedDict
 from types import SimpleNamespace
+import sys
+import types
 import unittest
+from unittest.mock import patch
 
 from lxml.html import fromstring, tostring
 from support import ROOT
@@ -26,6 +29,17 @@ def parser_class():
                sanitize_comments_html=lambda x:x)
     exec(compile(module, 'aladin-parser-methods', 'exec'), env)
     return env['Worker']
+
+
+def source_class():
+    tree = ast.parse((ROOT / 'plugins/aladin/__init__.py').read_text(encoding='utf-8'))
+    cls = next(n for n in tree.body if isinstance(n, ast.ClassDef))
+    cls.bases = []
+    cls.body = [n for n in cls.body if isinstance(n, ast.FunctionDef)]
+    module = ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[]))
+    env = dict(re=re, OrderedDict=OrderedDict, lower=str.lower, unicode=str)
+    exec(compile(module, 'aladin-source-methods', 'exec'), env)
+    return env[cls.name]
 
 
 class AladinTests(unittest.TestCase):
@@ -52,3 +66,27 @@ class AladinTests(unittest.TestCase):
         html = self.worker._content_node_to_comments_html(node)
         self.assertIn('소개', html)
         self.assertNotIn('bad()', html)
+
+    def test_search_logs_keep_korean_unicode(self):
+        from test_calibre_contract import Log
+        source = source_class()()
+        source.get_title_tokens = lambda title: title.split()
+        source.get_author_tokens = lambda authors: iter(authors or [])
+        config = types.ModuleType('calibre_plugins.aladin_co_kr.config')
+        config.STORE_NAME, config.KEY_MAX_DOWNLOADS = 'Aladin_co_kr', 'maxDownloads'
+        config.plugin_prefs = {config.STORE_NAME:{config.KEY_MAX_DOWNLOADS:5}}
+        package = types.ModuleType('calibre_plugins.aladin_co_kr')
+        package.__path__ = []
+        package.config = config
+        log = Log()
+        messages = []
+        log.info = lambda *args: messages.append(args)
+        root = fromstring('<div class="ss_book_box"><div class="ss_book_list"><p><a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=401344136">트렌드 코리아 2027</a></p><a href="/search/wsearchresult.aspx?AuthorSearch=test">김난도</a></div></div>')
+        with patch.dict(sys.modules, {'calibre_plugins.aladin_co_kr':package, config.__name__:config}):
+            matches = []
+            source._parse_search_results(log, '트렌드 코리아 2027', None, root, matches, 30)
+        self.assertEqual(len(matches), 1)
+        args = next(args for args in messages if args[0].startswith('Considering search result'))
+        self.assertIn('트렌드 코리아 2027', args)
+        self.assertIn('김난도', '|'.join(args))
+        self.assertTrue(all(isinstance(value, str) for value in args))

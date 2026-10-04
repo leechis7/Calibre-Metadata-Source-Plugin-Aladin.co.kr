@@ -5,6 +5,7 @@ Calibre-Metadata-Source-Plugin-Aladin.co.kr*.zip
 Aladin.co.kr*.zip
 Calibre-Metadata-Plugin*.zip
 dist/
+.dev-deps/
 tests/fixtures/yes24.html
 tests/fixtures/kyobo.html
 tests/fixtures/probe*

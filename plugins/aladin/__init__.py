@@ -6,7 +6,6 @@ from __future__ import (unicode_literals, division, absolute_import, print_funct
 
 import time
 import re
-import locale
 # from urllib import quote
 from six.moves.urllib.parse import quote
 # from Queue import Queue, Empty
@@ -43,11 +42,9 @@ class Aladin_co_kr(Source):
     name = 'Aladin.co.kr'
     description = _('Downloads metadata and covers from aladin.co.kr')
     author = 'YongSeok Choi'
-    version = (1, 2, 0)
+    version = (1, 2, 1)
     minimum_calibre_version = (5, 0, 0)
     
-    (_, encoding) = locale.getdefaultlocale()
-    if not encoding: encoding = "utf-8"
     
     capabilities = frozenset(['identify', 'cover'])
     touched_fields = frozenset(['title', 'authors', 'identifier:aladin.co.kr',
@@ -329,7 +326,6 @@ class Aladin_co_kr(Source):
                 log.info('Could not find titlexxxxxxx')
                 continue
             # Strip off any series information from the title
-            log.info('FOUND TITLE:', title.encode(self.encoding, errors='replace'))
             log.info('FOUND TITLE:', title)
             if '(' in title:
                 # log.info('Stripping off series(')
@@ -414,11 +410,9 @@ class Aladin_co_kr(Source):
                     authors.append(author.strip())
             
             # log.info('Looking at tokens:',author)
-            log.info('Considering search result: ', title.encode(self.encoding, errors='replace'), ",",
-                     '|'.join(authors).encode(self.encoding, errors='replace'))  #
+            log.info('Considering search result: ', title, ",", '|'.join(authors))
             if not ismatch(title, authors):
-                log.error('Rejecting as not close enough match: ', title.encode(self.encoding, errors='replace'), ",",
-                          '|'.join(authors).encode(self.encoding, errors='replace'))
+                log.error('Rejecting as not close enough match: ', title, ",", '|'.join(authors))
                 continue
             
             result_url = result.xpath('.//div[contains(@class, "ss_book_list")]//a/@href[contains(.,"wproduct.aspx?")]')

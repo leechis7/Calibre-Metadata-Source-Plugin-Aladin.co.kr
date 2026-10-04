@@ -7,6 +7,8 @@ import types
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+if (ROOT / '.dev-deps').is_dir():
+    sys.path.insert(0, str(ROOT / '.dev-deps'))
 sys.path.insert(0, str(ROOT / 'scripts'))
 from build import build_all
 

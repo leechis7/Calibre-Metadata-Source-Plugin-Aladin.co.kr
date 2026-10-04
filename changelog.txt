@@ -1,3 +1,12 @@
+[B]Version 1.2.1[/B] - 10-05-2026
+[LIST]
+[*]수정: YES24·교보에서 Calibre mechanize 응답 객체를 with 문에 직접 넣어 발생하던 TypeError를 수정했습니다. 검색·상세·재시도·표지 응답은 contextlib.closing으로 닫습니다.
+[*]수정: 알라딘 제목·저자 로그의 CP949 바이트 변환을 제거해 한글 깨짐을 해결했습니다.
+[*]수정: 교보 검색 결과의 null 목록 및 Next.js $undefined 선택 필드를 안전하게 처리합니다.
+[*]검증: 컨텍스트 매니저를 지원하지 않는 응답 대역과 실제 mechanize.response_seek_wrapper 회귀 테스트를 추가했습니다.
+[*]검증: 트렌드 코리아 2027의 YES24·교보 제목/ISBN 검색과 표지 다운로드를 실제 mechanize HTTP로 확인했습니다.
+[/LIST]
+
 [B]Version 1.2.0[/B] - 10-03-2026
 [LIST]
 [*]구조: 알라딘 코드를 plugins/aladin으로 옮기고 공통 모듈을 shared에서 각 ZIP에 번들링합니다.
