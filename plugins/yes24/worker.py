@@ -74,6 +74,18 @@ def parse_details(raw, url):
     elif isinstance(author, str):
         author = [author]
     authors = [a.get('name', '') if isinstance(a, dict) else str(a) for a in author]
+    # Foreign-book JSON-LD sometimes contains only the surname. The visible
+    # author field has the full name as plain text rather than linked authors.
+    author_nodes = root.xpath('//span[contains(@class,"gd_auth")]')
+    if author_nodes and not author_nodes[0].xpath('.//a'):
+        visible = text(author_nodes[0])
+        if visible:
+            authors = []
+            for name in re.split(r'\s*[;/]\s*', visible):
+                parts = [part.strip() for part in name.split(',')]
+                if len(parts) == 2 and all(parts) and not re.search(r'[가-힣]', name):
+                    name = parts[1] + ' ' + parts[0]
+                authors.append(name)
     if not authors:
         authors = [text(n) for n in root.xpath('//span[contains(@class,"gd_auth")]//a')]
     publisher = data.get('publisher', {})

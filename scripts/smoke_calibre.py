@@ -21,6 +21,8 @@ def main():
     parser.add_argument('--store', choices=['all'] + list(PLUGIN_CONFIGS), default='all')
     parser.add_argument('--title', default='트렌드 코리아 2027')
     parser.add_argument('--isbn', default='9791124073483')
+    parser.add_argument('--author', action='append', default=[], help='Author to include in title searches.')
+    parser.add_argument('--allow-missing-toc', action='store_true', help='Some foreign titles have no YES24 table of contents.')
     args = parser.parse_args()
     configured = os.environ.get('CALIBRE_CONFIG_DIRECTORY')
     if not configured or not Path(configured).resolve().is_relative_to(ROOT_DIR):
@@ -45,14 +47,15 @@ def main():
             continue
         for title, identifiers in ((args.title, {}), (None, {'isbn': args.isbn})):
             q, log = Queue(), ThreadSafeLog()
-            source.identify(log, q, Event(), title=title, identifiers=identifiers, timeout=30)
+            source.identify(log, q, Event(), title=title, authors=args.author if title else None, identifiers=identifiers, timeout=30)
             rows = []
             while not q.empty():
                 rows.append(q.get_nowait())
             mi = next((m for m in rows if m.isbn == args.isbn), None)
             assert mi is not None, (source.name, [(m.title, m.isbn) for m in rows])
             assert mi.authors and mi.publisher and mi.comments
-            assert '목차' in mi.comments
+            if not args.allow_missing_toc:
+                assert '목차' in mi.comments
             covers = Queue()
             source.download_cover(log, covers, Event(), identifiers=mi.identifiers, timeout=30)
             _, raw = covers.get_nowait()

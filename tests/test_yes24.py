@@ -33,6 +33,13 @@ class YES24Tests(unittest.TestCase):
     def test_missing_result(self):
         self.assertEqual(worker.search_results('<html>검색 결과 없음</html>'), [])
 
+    def test_foreign_book_plain_author_overrides_truncated_json(self):
+        raw = '<script type="application/ld+json">{"@type":"Book","name":"The Book of Debugging","author":{"name":"Kuhlmann"},"isbn":"9781718504066"}</script><h2 class="gd_name">The Book of Debugging</h2><span class="gd_auth">Kuhlmann, Johannes</span>'
+        book = worker.parse_details(raw, 'https://www.yes24.com/Product/Goods/141546817')
+        self.assertEqual(book['authors'], ['Johannes Kuhlmann'])
+        self.assertEqual(book['isbn'], '9781718504066')
+        self.assertEqual(book['id'], '141546817')
+
     def test_session_redirect_only_matches_yes24_home(self):
         query = 'https://www.yes24.com/Product/Search?query=test'
         self.assertTrue(worker.is_session_redirect(query, 'https://www.yes24.com/Main/default.aspx'))

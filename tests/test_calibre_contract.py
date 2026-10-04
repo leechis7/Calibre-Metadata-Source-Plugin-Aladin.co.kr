@@ -127,6 +127,11 @@ def load_source(store):
 
 
 class CalibreContractTests(unittest.TestCase):
+    def test_yes24_title_and_isbn_queries_include_foreign_books(self):
+        source = load_source('yes24')
+        self.assertIn('domain=ALL&query=The%20Book%20of%20Debugging', source.create_query(Log(), title='The Book of Debugging'))
+        self.assertIn('domain=ALL&query=9781718504066', source.create_query(Log(), identifiers={'isbn': '9781718504066'}))
+
     def test_yes24_cookie_validation_redirect_retries_search_and_details(self):
         for direct in (False, True):
             with self.subTest(direct=direct):
