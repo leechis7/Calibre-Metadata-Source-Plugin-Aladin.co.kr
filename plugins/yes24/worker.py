@@ -1,0 +1,96 @@
+"""YES24 HTML/JSON-LD adapter; no GUI or Calibre dependencies."""
+import json
+import re
+from urllib.parse import urljoin, urlsplit
+
+from lxml.html import fromstring, tostring
+
+from .text_cleaner import decode_html, first_text, meta, safe_url, text
+
+BASE = 'https://www.yes24.com'
+
+
+def valid_id(value):
+    return bool(re.fullmatch(r'\d+', value))
+
+
+def search_results(raw):
+    root = fromstring(decode_html(raw))
+    result = []
+    for href in root.xpath('//a[contains(concat(" ", normalize-space(@class), " "), " gd_name ")]/@href'):
+        url = urljoin(BASE, href)
+        match = re.fullmatch(r'/product/goods/(\d+)', urlsplit(url).path, re.I)
+        if urlsplit(url).hostname == 'www.yes24.com' and match:
+            url = BASE + '/Product/Goods/' + match[1]
+            if url not in result:
+                result.append(url)
+    return result
+
+
+def book_json(root):
+    for raw in root.xpath('//script[@type="application/ld+json"]/text()'):
+        try:
+            value = json.loads(raw)
+        except ValueError:
+            continue
+        values = value if isinstance(value, list) else value.get('@graph', [value])
+        for item in values:
+            types = item.get('@type', [])
+            if 'Book' in (types if isinstance(types, list) else [types]):
+                return item
+    return {}
+
+
+def section(root, id_):
+    nodes = root.xpath('//*[@id=$id]', id=id_)
+    if not nodes:
+        return ''
+    node = nodes[0]
+    # Some YES24 descriptions are escaped HTML in a textarea, rendered by JS.
+    values = node.xpath('.//textarea[contains(@class,"txtContentText")]/text()')
+    if values:
+        return '\n'.join(v.strip() for v in values)
+    nodes = node.xpath('.//*[contains(concat(" ", normalize-space(@class), " "), " txtContentText ")]')
+    return tostring(nodes[0], encoding='unicode') if nodes else ''
+
+
+def parse_details(raw, url):
+    root = fromstring(decode_html(raw))
+    data = book_json(root)
+    canonical = meta(root, 'og:url') or url
+    match = re.search(r'/product/goods/(\d+)', canonical, re.I)
+    title = first_text(root, '//h2[contains(@class,"gd_name")]') or data.get('name', '')
+    author = data.get('author', [])
+    if isinstance(author, dict):
+        author = [author]
+    elif isinstance(author, str):
+        author = [author]
+    authors = [a.get('name', '') if isinstance(a, dict) else str(a) for a in author]
+    if not authors:
+        authors = [text(n) for n in root.xpath('//span[contains(@class,"gd_auth")]//a')]
+    publisher = data.get('publisher', {})
+    publisher = publisher.get('name', '') if isinstance(publisher, dict) else publisher
+    date = data.get('datePublished') or first_text(root, '//span[contains(@class,"gd_date")]')
+    rating = data.get('aggregateRating') or {}
+    try:
+        score = float(rating.get('ratingValue', meta(root, 'books:rating:value'))) * 5 / float(rating.get('bestRating', 10))
+        score = max(0, min(5, score))
+    except (TypeError, ValueError, ZeroDivisionError):
+        score = None
+    series = data.get('isPartOf') or {}
+    intro = section(root, 'infoset_introduce') or data.get('description') or meta(root, 'description')
+    language = str(data.get('inLanguage', '')).lower()
+    langs = {'ko': 'kor', 'en': 'eng', 'ja': 'jpn', 'zh': 'zho', 'de': 'deu', 'fr': 'fra'}
+    return {
+        'id': match[1] if match else None, 'title': title,
+        'authors': list(dict.fromkeys(a.strip() for a in authors if a.strip())),
+        'isbn': data.get('isbn') or meta(root, 'books:isbn'),
+        'publisher': publisher or first_text(root, '//span[contains(@class,"gd_pub")]/a'),
+        'pubdate': date, 'rating': score,
+        'cover': safe_url(meta(root, 'og:image')),
+        'series': series.get('name') if isinstance(series, dict) else None,
+        'tags': data.get('genre', []) if isinstance(data.get('genre', []), list) else [data['genre']],
+        'languages': [langs[language.split('-')[0]]] if language.split('-')[0] in langs else [],
+        'sections': [('책소개', intro), ('저자소개', '\n\n'.join(text(n) for n in root.xpath('//*[@id="infoset_authorGrp"]//*[contains(@class,"info_origin")]'))),
+                     ('출판사 리뷰', section(root, 'infoset_pubReivew')), ('목차', section(root, 'infoset_toc'))],
+    }
