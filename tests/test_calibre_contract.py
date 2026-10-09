@@ -127,6 +127,44 @@ def load_source(store):
 
 
 class CalibreContractTests(unittest.TestCase):
+    def test_kyobo_empty_detail_recovers_after_product_api_session(self):
+        source = load_source('kyobo')
+        detail = source.detail_url.format(id='S000000610625')
+        top = 'https://product.kyobobook.co.kr/api/gw/pdt/v2/product/component/S000000610625/top'
+        middle = 'https://product.kyobobook.co.kr/api/gw/pdt/v2/product/component/S000000610625/middle'
+        class RecoveringBrowser(MechanizeBrowser):
+            def open_novisit(self, url, timeout):
+                if url.split('?_calibre=')[0] == detail and len(self.calls) < 2:
+                    self.calls.append(url)
+                    response = make_response(b'', [], url)
+                    response.close = unittest.mock.Mock(wraps=response.close)
+                    self.responses.append(response)
+                    return response
+                return super().open_novisit(url.split('?_calibre=')[0], timeout)
+        browser = RecoveringBrowser({detail:fixture('kyobo_detail.html').encode(), top:b'{"data":{}}', middle:fixture('kyobo_middle.json').encode()})
+        source.browser = browser
+        q, log = Queue(), Log()
+        source.identify(log, q, Event(), identifiers={'kyobobook.co.kr':'S000000610625'})
+        self.assertEqual(q.get_nowait().isbn, '9788936434267')
+        self.assertEqual(browser.calls[2:4], [top, detail])
+        self.assertFalse(log.exceptions)
+        self.assertTrue(all(r.close.called for r in browser.responses))
+
+    def test_kyobo_persistently_empty_detail_stops_after_recovery(self):
+        source = load_source('kyobo')
+        detail = source.detail_url.format(id='S000000610625')
+        class EmptyBrowser(MechanizeBrowser):
+            def open_novisit(self, url, timeout):
+                self.calls.append(url)
+                return make_response(b'{}' if '/api/' in url else b'', [], url)
+        browser = EmptyBrowser({})
+        source.browser = browser
+        q, log = Queue(), Log()
+        source.identify(log, q, Event(), identifiers={'kyobobook.co.kr':'S000000610625'})
+        self.assertTrue(q.empty())
+        self.assertEqual(len(browser.calls), 4)
+        self.assertTrue(log.exceptions)
+
     def test_yes24_title_and_isbn_queries_include_foreign_books(self):
         source = load_source('yes24')
         self.assertIn('domain=ALL&query=The%20Book%20of%20Debugging', source.create_query(Log(), title='The Book of Debugging'))

@@ -81,6 +81,22 @@ class KoreanBookSource(Source):
                 if getattr(adapter, 'is_session_redirect', lambda requested, actual: False)(url, response_url):
                     raise ValueError('Store session redirect persisted: ' + url)
             if not raw.strip():
+                recovery_url = getattr(adapter, 'empty_response_recovery_url', lambda requested: None)(url)
+                if recovery_url and not abort.is_set():
+                    # An uncached product API request can establish the Kyobo
+                    # product session before one final HTML request. Never invent
+                    # metadata from the search query or another bookstore.
+                    log.info('빈 상세 응답: 상품 API 세션 확인 후 다시 요청합니다: %s' % url)
+                    fetch(recovery_url)
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError('Metadata download timed out')
+                    if abort.is_set():
+                        raise InterruptedError('Metadata download cancelled')
+                    retry = url + ('&' if '?' in url else '?') + '_calibre=' + str(time.time_ns())
+                    with closing(browser.open_novisit(retry, timeout=remaining)) as response:
+                        raw = response.read()
+            if not raw.strip():
                 raise ValueError('Empty HTTP response: ' + url)
             return cleaner.decode_html(raw)
 

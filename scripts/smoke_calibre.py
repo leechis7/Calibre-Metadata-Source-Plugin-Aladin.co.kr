@@ -52,14 +52,19 @@ def main():
             while not q.empty():
                 rows.append(q.get_nowait())
             mi = next((m for m in rows if m.isbn == args.isbn), None)
-            assert mi is not None, (source.name, [(m.title, m.isbn) for m in rows])
-            assert mi.authors and mi.publisher and mi.comments
+            # Calibre's bundled interpreter can run with assertions disabled.
+            if mi is None:
+                raise RuntimeError('Expected metadata missing: %s %r' % (source.name, [(m.title, m.isbn) for m in rows]))
+            if not mi.authors or not mi.publisher or not mi.comments:
+                raise RuntimeError('Incomplete metadata: ' + source.name)
             if not args.allow_missing_toc:
-                assert '목차' in mi.comments
+                if '목차' not in mi.comments:
+                    raise RuntimeError('Missing table of contents: ' + source.name)
             covers = Queue()
             source.download_cover(log, covers, Event(), identifiers=mi.identifiers, timeout=30)
             _, raw = covers.get_nowait()
-            assert raw.startswith((b'\xff\xd8', b'\x89PNG', b'RIFF', b'GIF'))
+            if not raw.startswith((b'\xff\xd8', b'\x89PNG', b'RIFF', b'GIF')):
+                raise RuntimeError('Invalid cover: ' + source.name)
             print(f'{source.name} {"title" if title else "ISBN"}: {mi.title} / {mi.isbn} / cover {len(raw)} bytes / OK', flush=True)
 
 

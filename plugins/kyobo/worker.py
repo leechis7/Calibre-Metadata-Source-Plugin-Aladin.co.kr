@@ -19,6 +19,13 @@ def valid_id(value):
     return bool(re.fullmatch(r'S\d{12}', value))
 
 
+def empty_response_recovery_url(url):
+    parsed = urlsplit(url)
+    match = re.fullmatch(r'/detail/(S\d{12})', parsed.path)
+    if parsed.hostname == 'product.kyobobook.co.kr' and match:
+        return BASE + '/api/gw/pdt/v2/product/component/' + match[1] + '/top'
+
+
 def search_results(raw):
     root = fromstring(decode_html(raw))
     results = []
@@ -89,6 +96,11 @@ def parse_details(raw, url):
         # Keep writers, exclude translator/illustrator roles from the authors field.
         if mapping(group.get('role')).get('roleCode') == '001':
             authors.extend(a.get('chrcName', '') for a in group.get('info') or [])
+    authors = [a.strip() for a in authors if a and a.strip()]
+    for i, author in enumerate(authors):
+        parts = [p.strip() for p in author.split(',')]
+        if len(parts) == 2 and all(parts) and not re.search(r'[가-힣]', author):
+            authors[i] = parts[1] + ' ' + parts[0]
     publisher = mapping(top.get('publisher'))
     tags = []
     for group in intro.get('categoriList') or []:
@@ -101,10 +113,12 @@ def parse_details(raw, url):
     if 'contents.kyobobook.co.kr/sih/fit-in/' in cover:
         cover = re.sub(r'/fit-in/\d+x\d+/', '/fit-in/1000x0/', cover)
     score = mapping(top.get('reviewScore')).get('score')
+    isbn_match = re.search(r'(?<!\d)(?:97[89]\d{10}|\d{9}[\dXx])(?!\d)', str(basic.get('isbn') or top.get('cmdtCode') or ''))
     return {
         'id': match[1], 'title': top.get('title', ''),
         'authors': list(dict.fromkeys(a for a in authors if a)),
-        'isbn': basic.get('isbn') or top.get('cmdtCode'),
+        # Foreign editions can display both ISBN-13 and ISBN-10 in one field.
+        'isbn': isbn_match.group(0) if isbn_match else None,
         'publisher': mapping(publisher.get('label')).get('text', ''), 'pubdate': publisher.get('pubDate'),
         'cover': cover, 'languages': [langs[language]] if language in langs else [],
         'rating': max(0, min(5, float(score) / 2)) if score is not None else None,

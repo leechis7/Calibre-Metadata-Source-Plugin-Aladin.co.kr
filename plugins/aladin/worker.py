@@ -214,8 +214,12 @@ class Worker(Thread):  # Get details
             return match.group(1)
 
         # <meta property="og:url" content="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=125451796" />
-        page_url = root.xpath('//meta[@property="og:url"]')[0].attrib['content']
-        return re.search(r'wproduct\.aspx\?ItemId=(.+)', page_url).group(1)
+        page_urls = root.xpath('//meta[@property="og:url"]/@content')
+        if page_urls:
+            match = re.search(r'wproduct\.aspx\?ItemId=(\d+)', page_urls[0])
+            if match:
+                return match.group(1)
+        return None
     
     def parse_title_series(self, root):
         # title_node = root.xpath('//a[@class="p_topt01"]/..') <div><a

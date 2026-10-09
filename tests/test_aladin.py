@@ -56,6 +56,11 @@ class AladinTests(unittest.TestCase):
         self.assertEqual(self.worker.parse_isbn(root), '9788936434267')
         self.assertEqual(self.worker.parse_aladin_id('https://www.aladin.co.kr/shop/wproduct.aspx?ISBN=9788936434267', root), '123')
 
+    def test_unavailable_isbn_has_no_identifier(self):
+        url = 'https://www.aladin.co.kr/shop/wproduct.aspx?ISBN=9781807300814'
+        self.assertIsNone(self.worker.parse_aladin_id(url, fromstring('<html>상품 없음</html>')))
+        self.assertIsNone(self.worker.parse_aladin_id(url, fromstring('<meta property="og:url" content="https://www.aladin.co.kr/">')))
+
     def test_toc_fallback(self):
         root = fromstring('<div id="div_TOC_Short"><p>1장<br/>2장</p></div>')
         self.assertIn('1장', self.worker._find_toc_html(root))

@@ -6,6 +6,20 @@ worker = load_adapter('kyobo')
 
 
 class KyoboTests(unittest.TestCase):
+    def test_foreign_isbn_pair_and_author_order(self):
+        data = worker.product_data(worker.fromstring(fixture('kyobo_detail.html')), 'S000000610625')
+        data['top']['authors'][0]['info'][0]['chrcName'] = 'Doshi, Hemang'
+        data['summary']['basicInfo']['isbn'] = '9781807300814 ( 1807300811 )'
+        raw = '<script id="__NEXT_DATA__">' + json.dumps(data) + '</script>'
+        book = worker.parse_details(raw, 'https://product.kyobobook.co.kr/detail/S000000610625')
+        self.assertEqual(book['isbn'], '9781807300814')
+        self.assertEqual(book['authors'], ['Hemang Doshi'])
+
+    def test_empty_response_recovery_only_targets_product_details(self):
+        self.assertTrue(worker.empty_response_recovery_url('https://product.kyobobook.co.kr/detail/S000221557993').endswith('/S000221557993/top'))
+        self.assertIsNone(worker.empty_response_recovery_url('https://evil.example/detail/S000221557993'))
+        self.assertIsNone(worker.empty_response_recovery_url('https://product.kyobobook.co.kr/api/gw/pdt/v2/product/component/S000221557993/top'))
+
     def test_null_optional_lists(self):
         root = worker.fromstring(fixture('kyobo_detail.html'))
         data = worker.product_data(root, 'S000000610625')
