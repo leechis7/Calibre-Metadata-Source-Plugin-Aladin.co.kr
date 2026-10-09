@@ -6,6 +6,8 @@ Aladin.co.kr*.zip
 Calibre-Metadata-Plugin*.zip
 dist/
 .dev-deps/
+.venv/
+venv/
 tests/fixtures/yes24.html
 tests/fixtures/kyobo.html
 tests/fixtures/probe*

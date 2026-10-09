@@ -1,6 +1,6 @@
 # Calibre Metadata Source Plugins Korea
 
-Calibre에서 **알라딘·YES24·교보문고**의 도서 메타데이터와 표지를 가져옵니다. 하나의 저장소에서 개발하고 **서점별 독립 ZIP 3개**로 배포합니다. 원하는 서점만 설치하거나 모두 설치해 Calibre의 메타데이터 다운로드 설정에서 소스별 사용 여부와 우선순위를 지정할 수 있습니다.
+Calibre에서 **알라딘·YES24·교보문고**의 도서 메타데이터와 표지를 가져옵니다. 하나의 저장소에서 개발하고 서점별 독립 ZIP 세 개로 배포합니다. 원하는 서점만 설치하거나 모두 설치해 Calibre에서 소스별 사용 여부와 우선순위를 설정할 수 있습니다.
 
 ## 설치
 
@@ -10,16 +10,17 @@ Calibre에서 **알라딘·YES24·교보문고**의 도서 메타데이터와 �
 | YES24 | `YES24.com` | [YES24 ZIP](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases/download/v1.2.4/Calibre-Metadata-Plugin-YES24-v1.2.4.zip) |
 | 교보문고 | `Kyobobook.co.kr` | [Kyobo ZIP](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases/download/v1.2.4/Calibre-Metadata-Plugin-Kyobo-v1.2.4.zip) |
 
-위 링크는 **v1.2.4 Release 공개 후** 사용할 수 있습니다. 공개 전에는 아래 빌드 명령으로 생성한 `dist/`의 ZIP을 사용합니다. 실제 배포된 버전은 [전체 릴리즈](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases)에서 확인합니다.
+다른 버전과 변경 내용은 [Releases](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/releases)와 [CHANGELOG.md](CHANGELOG.md)에서 확인하세요.
 
 1. 원하는 ZIP을 다운로드합니다. 압축을 풀지 않습니다.
 2. Calibre `환경설정 → 고급 → 플러그인 → 파일에서 플러그인 불러오기`에서 설치합니다.
-3. Calibre를 재시작하고 `환경설정 → 메타데이터 다운로드`에서 사용할 소스와 옵션을 설정합니다.
-4. 도서의 `메타데이터 편집 → 메타데이터 다운로드`를 실행합니다.
+3. Calibre를 완전히 종료했다가 다시 실행합니다.
+4. `환경설정 → 메타데이터 다운로드`에서 사용할 소스와 옵션을 설정합니다.
+5. 도서의 `메타데이터 편집 → 메타데이터 다운로드`를 실행합니다.
 
-최소 Calibre 버전은 5.0.0입니다. 새 소스의 설정은 Calibre 기본 UI를 사용합니다. 기존 알라딘의 표시 이름, `aladin.co.kr` 식별자와 `plugins/Aladin` 설정 저장소는 유지하여 업데이트할 수 있습니다.
+최소 Calibre 버전은 5.0.0이며 실제 런타임 검증은 Portable Calibre 9.15.0에서 수행했습니다. YES24·교보 설정은 Calibre 기본 UI를 사용합니다. 알라딘의 표시 이름, `aladin.co.kr` 식별자와 `plugins/Aladin` 설정 저장소는 유지해 업데이트할 수 있습니다.
 
-## 지원 정보
+## 지원 기능
 
 | 기능 | 알라딘 | YES24 | 교보문고 |
 | --- | --- | --- | --- |
@@ -29,81 +30,32 @@ Calibre에서 **알라딘·YES24·교보문고**의 도서 메타데이터와 �
 | 평점·분류 태그·언어 | 지원 | 제공 시 지원 | 제공 시 지원 |
 | 시리즈 | 지원 | 제공 시 지원 | 미지원 |
 
-- 알라딘: 기존 HTML 파서, Search3Ajax 검색과 `getContents.aspx` 책소개를 유지합니다.
-- YES24: HTML 및 JSON-LD를 읽습니다. textarea에 저장된 책소개·목차·서평도 처리합니다.
-- 교보: 현재 Next.js Flight JSON(`self.__next_f.push`)을 실행 없이 읽고 요청한 상품 ID의 데이터만 선택합니다. 상품 middle API로 목차·저자소개·서평을 보완합니다. `__NEXT_DATA__`에 동일 상품 구조가 있는 경우도 읽습니다.
-- 새 소스는 ISBN-10/13의 같은 판본을 확인합니다. ISBN 없이 검색하면 제목·저자가 맞는 결과를 선택합니다. 식별자 검색 실패 시 제목 정보로 재검색합니다.
-- YES24·교보 설정: 최대 결과 수(기본 5, 적용 범위 1~20), 목차 포함, 분류 태그 사용.
-- 사이트가 제공하지 않는 항목은 비어 있을 수 있습니다. 교보 추가 API가 실패해도 기본 도서정보를 반환합니다.
+YES24는 국내·외국도서 통합 검색을 사용합니다. YES24·교보는 최대 결과 수, 목차 포함과 분류 태그 사용 여부를 설정할 수 있습니다. ISBN-10/13의 같은 판본을 확인하며, ISBN 없이 검색할 때는 제목·저자를 비교합니다.
 
-## 구조와 빌드
+서점에 등록되지 않은 도서와 제공하지 않는 항목은 가져올 수 없습니다. 저자소개의 한국어·영어 혼합 문구 등 서점 원문의 내용이 그대로 포함될 수 있습니다. 교보의 추가 정보 API가 실패하더라도 기본 도서정보는 반환합니다.
 
-```text
-plugins/aladin/        기존 알라딘 Source, worker, 설정, 번역
-plugins/yes24/         YES24 Source, worker, 설정
-plugins/kyobo/         교보 Source, worker, 설정
-shared/               공통 파싱·Calibre 인터페이스·설정·기존 Qt 헬퍼
-scripts/build.py      독립 ZIP 생성과 SHA-256 체크섬
-scripts/release.py    GitHub CLI 릴리즈 미리보기/업로드
-scripts/smoke.py      선택 실행 실시간 HTTP 검사
-scripts/smoke_calibre.py 실제 Calibre 런타임·ZIP 설치·검색·표지 검사
-tests/                서점별 회귀·인터페이스·ZIP 검사
-.github/workflows/    태그 기반 검사·빌드·Release 자동화
-```
+## 개발·빌드·릴리즈
 
-공통 모듈은 각 ZIP 루트에 복사됩니다. 고유한 `plugin-import-name-*.txt`를 사용해 서로 다른 `calibre_plugins` 네임스페이스로 로드되므로 다른 ZIP이나 이 저장소 없이 설치할 수 있습니다. 실행 의존성은 Calibre가 제공합니다.
+- [개발·빌드 안내](docs/development.md): Windows·Linux 환경 준비, 일괄·개별 ZIP 빌드, 회귀 테스트와 실제 Calibre 검사
+- [릴리즈 안내](docs/releasing.md): 버전 변경, 로컬 검증, 승인 후 태그 push와 GitHub Release, 수동·초안 배포 및 실패 대응
+- [기여 안내](CONTRIBUTING.md): 버그 신고, 파서 수정과 Pull request 제출
 
-일반 Python 3.8 이상으로 빌드할 수 있으며 테스트에는 lxml이 필요합니다.
+환경을 준비한 뒤 저장소 루트에서 실행하는 기본 명령입니다.
 
 ```sh
 python -m pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
-python scripts/build.py          # 3개 일괄 빌드
-python scripts/build.py yes24    # 한 서점만 빌드
-python scripts/smoke.py          # 네트워크 접근, 실시간 검사
-python scripts/smoke.py --store kyobo
-python scripts/smoke_mechanize.py # 실제 mechanize로 소스 identify/cover 실행
+python scripts/build.py
+python scripts/release.py  # 로컬 빌드와 업로드 계획만 표시
 ```
 
-`dist/`에 ZIP 3개와 `SHA256SUMS.txt`가 생성됩니다. 빌드는 Python 문법, 필수 마커, 파일 이름 충돌과 통합 버전을 확인하며 동일 소스로 동일 ZIP을 생성합니다. ZIP은 Git에 추가하지 않습니다.
+`dist/`에 독립 ZIP 세 개와 `SHA256SUMS.txt`가 생성됩니다. 각 ZIP에는 해당 서점 코드·공통 모듈·라이선스가 포함됩니다. 실행 의존성은 Calibre가 제공합니다.
 
-검사에는 축약한 실제 HTML/JSON 구조, 알라딘 파서 회귀, 새 소스의 큐·캐시·취소·제한시간·옵션·ISBN 확인, ZIP 구조와 재현성 검증이 포함됩니다. Calibre 메타데이터 API는 대역을 사용하지만 HTTP 응답은 실제 mechanize.response_seek_wrapper로도 검사합니다. 앱 설치 검사를 대체하지 않습니다.
+GitHub Actions는 `main` push·PR에서 테스트와 빌드를 실행합니다. **`v*` 태그를 push하면 검사 후 공개 Release가 자동 생성됩니다.** 에이전트가 작업할 때 push·태그 push·릴리즈 배포는 저장소 소유자의 사전 승인을 받습니다.
 
-2026-10-05에는 Portable Calibre 9.15.0의 실제 플러그인 로더·브라우저·메타데이터 객체로 세 서점의 ‘트렌드 코리아 2027’ 제목/ISBN 검색, 책소개·목차 및 표지 다운로드를 확인했습니다. YES24의 첫 요청이 세션 확인 후 홈페이지로 이동하는 현상을 재현하고 자동 재요청으로 회복되는 것도 확인했습니다. 외국도서 The Book of Debugging(9781718504066)의 제목/제목+저자/ISBN 검색 및 표지도 확인했고, 2026-10-09에는 AI Governance in Practice(9781807300814)의 교보·YES24 검색·표지, 알라딘 결과 없음과 교보 빈 응답 복구를 확인했고, 전체 회귀 테스트 47개가 통과했습니다. GUI 조작 검증은 별도입니다.
+## 문제 신고
 
-실제 Calibre 검사는 작업 폴더에 별도 설정을 만들어 실행합니다. 먼저 ZIP을 빌드한 뒤 PowerShell에서 실행하세요.
-
-```powershell
-$env:CALIBRE_CONFIG_DIRECTORY = Join-Path (Get-Location) '.dev-deps\calibre-smoke-settings'
-& 'C:\tools\Calibre Portable\Calibre\calibre-debug.exe' -e scripts/smoke_calibre.py
-# YES24만 검사: 마지막에 -- --store yes24 추가
-# 외국도서 예제 (해당 YES24 상품에는 목차가 없음)
-& 'C:\tools\Calibre Portable\Calibre\calibre-debug.exe' -e scripts/smoke_calibre.py -- --store yes24 --title 'The Book of Debugging' --isbn 9781718504066 --author 'Johannes Kuhlmann' --allow-missing-toc
-```
-
-## Release
-
-세 플러그인의 `version`을 함께 변경하고 `release-notes.md`, README 다운로드 링크와 [CHANGELOG.md](CHANGELOG.md)를 갱신합니다.
-
-```sh
-python scripts/release.py        # 빌드하고 업로드 계획만 표시
-git add <변경한 파일>
-git commit -m "Release 1.2.4: fix Kyobo foreign ISBN and empty responses"
-git tag v1.2.4
-git push origin main
-git push origin v1.2.4
-```
-
-태그가 올라가면 GitHub Actions가 테스트·빌드하고, 태그와 모든 플러그인 버전이 일치할 때 ZIP 3개와 체크섬을 Release에 업로드합니다. 사이트 상태에 영향을 받는 실시간 smoke는 CI에서 자동 실행하지 않습니다.
-
-GitHub Actions 대신 로컬에서 업로드하려면 GitHub CLI(`gh`) 인증과 원격 태그가 필요합니다. 자동 Release와 동시에 실행하지 않습니다.
-
-```sh
-python scripts/release.py --publish --draft
-# 공개 릴리즈: --draft 생략
-```
-
-로컬 업로드는 깨끗한 작업 트리와 현재 HEAD를 가리키는 릴리즈 태그를 확인합니다. 빌드·미리보기 명령은 커밋·태그·업로드를 하지 않습니다.
+[Issues](https://github.com/leechis7/Calibre-Metadata-Source-Plugins-Korea/issues)에서 버그 신고 양식을 사용하세요. 운영체제·Calibre 버전·플러그인 버전, 책 제목·저자·ISBN·상품 URL과 다운로드 로그를 포함하면 재현에 도움이 됩니다. 로그의 개인정보·쿠키·인증 정보는 제거하세요.
 
 ## 출처와 라이선스
 

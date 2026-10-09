@@ -1,0 +1,58 @@
+name: 버그 신고
+description: 검색·메타데이터·표지·설치 오류를 신고합니다.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: 기존 이슈와 서점 상품 페이지를 먼저 확인해주세요. 로그에서 개인정보·쿠키·인증 정보는 제거하세요.
+  - type: dropdown
+    id: store
+    attributes:
+      label: 서점
+      options:
+        - 알라딘
+        - YES24
+        - 교보문고
+        - 공통 / 설치 / 빌드
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 운영체제와 Calibre 버전
+      placeholder: Windows 11, Portable Calibre 9.15.0
+    validations:
+      required: true
+  - type: input
+    id: plugin_version
+    attributes:
+      label: 플러그인 이름과 버전
+      description: 다운로드 로그의 Using plugins 항목으로 확인합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: book
+    attributes:
+      label: 책 제목·저자·ISBN·상품 URL
+      description: 해당하는 정보를 적어주세요. 설치·빌드 문제라면 해당 없음으로 적습니다.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 순서
+      description: 검색에 넣은 제목·저자·식별자와 오류 발생 시점을 포함해주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 기대 결과와 실제 결과
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 오류 로그
+      description: Calibre의 메타데이터 다운로드 로그 또는 빌드 오류를 붙여주세요.
+      render: text
