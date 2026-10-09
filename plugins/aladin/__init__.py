@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:fileencoding=UTF-8:ts=4:sw=4:sta:et:sts=4:ai
 # Modified by leechis7 beginning 2026-06-02.
-# See README.md and changelog.txt for maintenance changes.
+# See README.md and CHANGELOG.md for maintenance changes.
 from __future__ import (unicode_literals, division, absolute_import, print_function)
 
 import time

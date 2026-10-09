@@ -83,7 +83,7 @@ $env:CALIBRE_CONFIG_DIRECTORY = Join-Path (Get-Location) '.dev-deps\calibre-smok
 
 ## Release
 
-세 플러그인의 `version`을 함께 변경하고 `release-notes.md`, README 다운로드 링크와 `changelog.txt`를 갱신합니다.
+세 플러그인의 `version`을 함께 변경하고 `release-notes.md`, README 다운로드 링크와 [CHANGELOG.md](CHANGELOG.md)를 갱신합니다.
 
 ```sh
 python scripts/release.py        # 빌드하고 업로드 계획만 표시
